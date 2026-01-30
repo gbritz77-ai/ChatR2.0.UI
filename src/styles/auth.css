@@ -1,0 +1,121 @@
+:root{
+  --bg: #0b1220;
+  --panel: rgba(255,255,255,0.06);
+  --panel-2: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.10);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.62);
+
+  --primary: #38bdf8;
+  --accent: #a855f7;
+  --success: #22c55e;
+  --danger: #f87171;
+
+  --shadow: 0 20px 60px rgba(0,0,0,0.55);
+  --radius: 16px;
+}
+
+.auth-page{
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(1200px 600px at 15% 20%, rgba(56,189,248,0.18), transparent 60%),
+    radial-gradient(900px 500px at 85% 30%, rgba(168,85,247,0.16), transparent 60%),
+    radial-gradient(900px 500px at 50% 95%, rgba(34,197,94,0.10), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  padding: 24px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.auth-card{
+  width: 100%;
+  max-width: 420px;
+  padding: 28px;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.03));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.auth-header h2{
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  letter-spacing: 0.2px;
+}
+
+.auth-header p{
+  margin: 0 0 18px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-error{
+  margin: 0 0 12px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(248,113,113,0.25);
+  background: rgba(248,113,113,0.10);
+  color: rgba(255,255,255,0.90);
+  font-size: 13px;
+}
+
+.auth-form .field{
+  margin-bottom: 14px;
+}
+
+.auth-form label{
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.auth-form input{
+  width: 100%;
+  border-radius: 12px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(2,6,23,0.35);
+  color: var(--text);
+  outline: none;
+  font-size: 14px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.auth-form input:focus{
+  border-color: rgba(56,189,248,0.65);
+  box-shadow: 0 0 0 4px rgba(56,189,248,0.12);
+}
+
+.auth-btn{
+  width: 100%;
+  margin-top: 6px;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #06101a;
+  cursor: pointer;
+  background: linear-gradient(90deg, var(--primary), var(--success), var(--accent));
+  box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.auth-btn:hover{ filter: brightness(1.05); }
+.auth-btn:active{ transform: translateY(1px); }
+
+/* 🔥 Hard-fix common “login stuck left” issues */
+html, body, #root{
+  height: 100%;
+  width: 100%;
+}
+
+body{
+  margin: 0;
+  display: block;     /* prevents someone else’s flex layout from forcing left */
+}
