@@ -58,7 +58,7 @@ export async function getChats(token: string): Promise<ChatDto[]> {
   // but it doesn’t hurt to log it / ensure it is set.
   api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-  const res = await api.get<ChatDto[]>("/api/Chats");
+  const res = await api.get<ChatDto[]>("/Chats");
   console.log("[chatApi] GET /api/Chats status:", res.status, "data:", res.data);
   return res.data;
 }
@@ -168,7 +168,7 @@ export async function searchUsers(
 
   const trimmed = search.trim();
 
-  const res = await api.get<ChatUserDto[]>("/api/Users", {
+  const res = await api.get<ChatUserDto[]>("/Users", {
     // Your UsersController currently ignores `search`, which is fine:
     // you’ll get ALL users, and we can add real filtering later.
     params: trimmed ? { search: trimmed } : undefined,
@@ -196,7 +196,7 @@ export async function createPrivateChat(
     payload
   );
 
-  const res = await api.post<PrivateChatDto>("/api/Chats/private", payload);
+  const res = await api.post<PrivateChatDto>("/Chats/private", payload);
 
   console.log(
     "[chatApi] POST /api/Chats/private status:",
@@ -217,7 +217,7 @@ export async function createGroupChat(
   const payload = { name: groupName, memberIds };
   console.log("[chatApi] POST /api/Chats/group payload:", payload);
 
-  const res = await api.post<GroupChatDto>("/api/Chats/group", payload);
+  const res = await api.post<GroupChatDto>("/Chats/group", payload);
 
   console.log(
     "[chatApi] POST /api/Chats/group status:",
