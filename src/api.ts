@@ -2,8 +2,16 @@ import axios from "axios";
 
 const apiBase = import.meta.env.VITE_API_BASE as string;
 
+// Safety check (as requested)
+if (!apiBase || !apiBase.startsWith("https://")) {
+  throw new Error("VITE_API_BASE must be absolute (https://...)");
+}
+
+// Normalize (remove trailing slash)
+const normalizedBase = apiBase.replace(/\/+$/, "");
+
 export const api = axios.create({
-  baseURL: apiBase,
+  baseURL: `${normalizedBase}/api`,
 });
 
 export function setAuthToken(token: string | null) {
@@ -22,7 +30,7 @@ export interface LoginResponse {
 }
 
 export async function login(usernameOrEmail: string, password: string) {
-  const res = await api.post<LoginResponse>("/api/Auth/login", {
+  const res = await api.post<LoginResponse>("/Auth/login", {
     usernameOrEmail,
     password,
   });
