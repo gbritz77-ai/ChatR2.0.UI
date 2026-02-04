@@ -1,30 +1,26 @@
 // src/api/chatApi.ts
-import { api } from "../api"; // <-- uses your existing axios instance
+import { api } from "../api"; // axios instance with baseURL = https://.../api
 
 // ===== DTOs =====
 
-// Matches ChatSummaryDto in ChatsController
 export interface ChatDto {
-  chatId: string;           // Guid as string
+  chatId: string;
   name: string | null;
   isGroup: boolean;
   unreadCount: number;
-  otherUserName?: string | null;  // 👈 NEW
+  otherUserName?: string | null;
 }
 
-
-// Matches GetMessages / SendMessage responses
 export interface ChatMessageDto {
   id: string;
   chatId: string;
   senderId: string;
-  senderUserName?: string;  // optional – in case you later add it to the API
+  senderUserName?: string;
   text: string;
   createdAt: string;
-  gifUrl?: string;          // optional GIF URL
+  gifUrl?: string;
 }
 
-// Matches POST /api/Chats/private response
 export interface PrivateChatDto {
   id: string;
   isGroup: boolean;
@@ -33,7 +29,6 @@ export interface PrivateChatDto {
   createdAt: string;
 }
 
-// Matches UsersController GetUsers projection
 export interface ChatUserDto {
   id: string;
   username: string;
@@ -41,7 +36,6 @@ export interface ChatUserDto {
   role: string;
 }
 
-// Matches POST /api/Chats/group response
 export interface GroupChatDto {
   id: string;
   name: string;
@@ -51,15 +45,20 @@ export interface GroupChatDto {
   members: ChatUserDto[];
 }
 
+// ===== Helpers =====
+
+function applyToken(token: string) {
+  // If you're already calling setAuthToken() globally, you can remove token params entirely later.
+  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+}
+
 // ===== API wrappers =====
 
 export async function getChats(token: string): Promise<ChatDto[]> {
-  // token isn’t strictly necessary if you already called setAuthToken,
-  // but it doesn’t hurt to log it / ensure it is set.
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  applyToken(token);
 
   const res = await api.get<ChatDto[]>("/Chats");
-  console.log("[chatApi] GET /api/Chats status:", res.status, "data:", res.data);
+  console.log("[chatApi] GET /Chats status:", res.status, "data:", res.data);
   return res.data;
 }
 
@@ -69,21 +68,20 @@ export async function getChatMessages(
   skip = 0,
   take = 50
 ): Promise<ChatMessageDto[]> {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  applyToken(token);
 
   const res = await api.get<ChatMessageDto[]>(
-    `/api/Chats/${encodeURIComponent(chatId)}/messages`,
-    {
-      params: { skip, take },
-    }
+    `/Chats/${encodeURIComponent(chatId)}/messages`,
+    { params: { skip, take } }
   );
 
   console.log(
-    "[chatApi] GET /api/Chats/{chatId}/messages status:",
+    "[chatApi] GET /Chats/{chatId}/messages status:",
     res.status,
     "data:",
     res.data
   );
+
   return res.data;
 }
 
@@ -93,89 +91,21 @@ export async function sendChatMessage(
   token: string,
   gifUrl?: string
 ): Promise<ChatMessageDto> {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  applyToken(token);
 
   const payload: any = {};
-  
-  // Only include text if it's not empty
-  if (text.trim()) {
-    payload.text = text.trim();
-  }
-  
-  // Only include gifUrl if provided
-  if (gifUrl) {
-    payload.gifUrl = gifUrl;
-  }
+  if (text.trim()) payload.text = text.trim();
+  if (gifUrl) payload.gifUrl = gifUrl;
 
-  console.log(
-    "[chatApi] POST /api/Chats/{chatId}/messages payload:",
+  console.log("[chatApi] POST /Chats/{chatId}/messages payload:", payload);
+
+  const res = await api.post<ChatMessageDto>(
+    `/Chats/${encodeURIComponent(chatId)}/messages`,
     payload
   );
 
-  try {
-    const res = await api.post<ChatMessageDto>(
-      `/api/Chats/${encodeURIComponent(chatId)}/messages`,
-      payload
-    );
-
-    console.log(
-      "[chatApi] POST /api/Chats/{chatId}/messages status:",
-      res.status,
-      "data:",
-      res.data
-    );
-    return res.data;
-  } catch (error: any) {
-    console.error(
-      "[chatApi] POST /api/Chats/{chatId}/messages failed with status:",
-      error.response?.status,
-      "error details:",
-      error.response?.data,
-      "error message:",
-      error.message
-    );
-    throw error;
-  }
-}
-
-export async function markChatRead(
-  chatId: string,
-  token: string
-): Promise<void> {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-  const res = await api.post(
-    `/api/Chats/${encodeURIComponent(chatId)}/read`,
-    null
-  );
-
   console.log(
-    "[chatApi] POST /api/Chats/{chatId}/read status:",
-    res.status
-  );
-
-  if (res.status < 200 || res.status >= 300) {
-    throw new Error(`Failed to mark chat read: ${res.status}`);
-  }
-}
-
-// 🔸 This powers your “dropdown with all users”
-export async function searchUsers(
-  token: string,
-  search: string
-): Promise<ChatUserDto[]> {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-  const trimmed = search.trim();
-
-  const res = await api.get<ChatUserDto[]>("/Users", {
-    // Your UsersController currently ignores `search`, which is fine:
-    // you’ll get ALL users, and we can add real filtering later.
-    params: trimmed ? { search: trimmed } : undefined,
-  });
-
-  console.log(
-    "[chatApi] GET /api/Users status:",
+    "[chatApi] POST /Chats/{chatId}/messages status:",
     res.status,
     "data:",
     res.data
@@ -184,26 +114,52 @@ export async function searchUsers(
   return res.data;
 }
 
+export async function markChatRead(chatId: string, token: string): Promise<void> {
+  applyToken(token);
+
+  const res = await api.post(`/Chats/${encodeURIComponent(chatId)}/read`, null);
+
+  console.log("[chatApi] POST /Chats/{chatId}/read status:", res.status);
+
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`Failed to mark chat read: ${res.status}`);
+  }
+}
+
+export async function searchUsers(
+  token: string,
+  search: string
+): Promise<ChatUserDto[]> {
+  applyToken(token);
+
+  const trimmed = search.trim();
+
+  const res = await api.get<ChatUserDto[]>("/Users", {
+    params: trimmed ? { search: trimmed } : undefined,
+  });
+
+  console.log("[chatApi] GET /Users status:", res.status, "data:", res.data);
+  return res.data;
+}
+
 export async function createPrivateChat(
   targetUserId: string,
   token: string
 ): Promise<PrivateChatDto> {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  applyToken(token);
 
   const payload = { targetUserId };
-  console.log(
-    "[chatApi] POST /api/Chats/private payload:",
-    payload
-  );
+  console.log("[chatApi] POST /Chats/private payload:", payload);
 
   const res = await api.post<PrivateChatDto>("/Chats/private", payload);
 
   console.log(
-    "[chatApi] POST /api/Chats/private status:",
+    "[chatApi] POST /Chats/private status:",
     res.status,
     "data:",
     res.data
   );
+
   return res.data;
 }
 
@@ -212,19 +168,20 @@ export async function createGroupChat(
   memberIds: string[],
   token: string
 ): Promise<GroupChatDto> {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  applyToken(token);
 
   const payload = { name: groupName, memberIds };
-  console.log("[chatApi] POST /api/Chats/group payload:", payload);
+  console.log("[chatApi] POST /Chats/group payload:", payload);
 
   const res = await api.post<GroupChatDto>("/Chats/group", payload);
 
   console.log(
-    "[chatApi] POST /api/Chats/group status:",
+    "[chatApi] POST /Chats/group status:",
     res.status,
     "data:",
     res.data
   );
+
   return res.data;
 }
 
@@ -233,20 +190,17 @@ export async function addGroupMember(
   memberId: string,
   token: string
 ): Promise<void> {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  applyToken(token);
 
   const payload = { userId: memberId };
-  console.log("[chatApi] POST /api/Chats/{chatId}/members payload:", payload);
+  console.log("[chatApi] POST /Chats/{chatId}/members payload:", payload);
 
   const res = await api.post(
-    `/api/Chats/${encodeURIComponent(chatId)}/members`,
+    `/Chats/${encodeURIComponent(chatId)}/members`,
     payload
   );
 
-  console.log(
-    "[chatApi] POST /api/Chats/{chatId}/members status:",
-    res.status
-  );
+  console.log("[chatApi] POST /Chats/{chatId}/members status:", res.status);
 
   if (res.status < 200 || res.status >= 300) {
     throw new Error(`Failed to add member: ${res.status}`);
@@ -258,14 +212,14 @@ export async function removeGroupMember(
   memberId: string,
   token: string
 ): Promise<void> {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  applyToken(token);
 
   const res = await api.delete(
-    `/api/Chats/${encodeURIComponent(chatId)}/members/${encodeURIComponent(memberId)}`
+    `/Chats/${encodeURIComponent(chatId)}/members/${encodeURIComponent(memberId)}`
   );
 
   console.log(
-    "[chatApi] DELETE /api/Chats/{chatId}/members/{memberId} status:",
+    "[chatApi] DELETE /Chats/{chatId}/members/{memberId} status:",
     res.status
   );
 
@@ -278,17 +232,18 @@ export async function getGroupMembers(
   chatId: string,
   token: string
 ): Promise<ChatUserDto[]> {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  applyToken(token);
 
   const res = await api.get<ChatUserDto[]>(
-    `/api/Chats/${encodeURIComponent(chatId)}/members`
+    `/Chats/${encodeURIComponent(chatId)}/members`
   );
 
   console.log(
-    "[chatApi] GET /api/Chats/{chatId}/members status:",
+    "[chatApi] GET /Chats/{chatId}/members status:",
     res.status,
     "data:",
     res.data
   );
+
   return res.data;
 }
