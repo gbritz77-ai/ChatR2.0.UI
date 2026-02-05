@@ -5,8 +5,6 @@ import { presignUpload } from "../../api";
 
 interface Props {
   chatId: string;
-
-  // Your existing send: update it to accept optional attachmentId
   onSend: (text: string, gifUrl?: string, attachmentId?: string) => Promise<void> | void;
 }
 
@@ -39,6 +37,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
+
     const before = text.substring(0, start);
     const after = text.substring(end);
     const newText = before + emoji.native + after;
@@ -53,6 +52,8 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
   };
 
   const uploadToS3 = async (file: File): Promise<string> => {
+    if (!chatId) throw new Error("ChatId missing");
+
     const presign = await presignUpload({
       chatId,
       fileName: file.name,
@@ -60,9 +61,13 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
       fileSize: file.size,
     });
 
+    if (!presign?.uploadUrl || !presign?.attachmentId) {
+      throw new Error("Invalid presign response");
+    }
+
     const putRes = await fetch(presign.uploadUrl, {
       method: "PUT",
-      headers: { "Content-Type": presign.contentType },
+      headers: { "Content-Type": presign.contentType || "application/octet-stream" },
       body: file,
     });
 
@@ -77,11 +82,6 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
   const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed && !selectedGifUrl && !selectedFile) return;
-
-    if (!chatId) {
-      setError("ChatId missing");
-      return;
-    }
 
     setBusy(true);
     setError(null);
@@ -136,7 +136,6 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
         </div>
       )}
 
-      {/* Selected GIF preview */}
       {selectedGifUrl && (
         <div
           style={{
@@ -170,7 +169,6 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
         </div>
       )}
 
-      {/* Selected file preview */}
       {selectedFile && (
         <div
           style={{
@@ -246,7 +244,6 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
           GIF
         </button>
 
-        {/* Attach file */}
         <input
           ref={fileInputRef}
           type="file"

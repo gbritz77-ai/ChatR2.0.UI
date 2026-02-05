@@ -221,45 +221,54 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     (c) => c.id === selectedConversationId
   );
 
-  const handleSendMessage = async (text: string, gifUrl?: string) => {
-    if (!selectedConversationId || (!text.trim() && !gifUrl)) return;
+  const handleSendMessage = async (
+  text: string,
+  gifUrl?: string,
+  attachmentId?: string
+) => {
+  if (!selectedConversationId) return;
 
-    const trimmed = text.trim();
+  const trimmed = text.trim();
 
-    // Optimistic UI
-    const tempId = `temp-${Date.now()}`;
-    const optimistic: Message = {
-      id: tempId,
-      conversationId: selectedConversationId,
-      senderId: currentUserName,
-      senderName: currentUserName,
-      text: trimmed,
-      createdAt: new Date().toISOString(),
-      isMe: true,
-      gifUrl: gifUrl,
-    };
+  // allow attachment-only or gif-only
+  if (!trimmed && !gifUrl && !attachmentId) return;
 
-    setMessages((prev) => [...prev, optimistic]);
-
-    try {
-      const dto = await sendChatMessage(
-        selectedConversationId,
-        trimmed,
-        authToken,
-        gifUrl
-      );
-      const real = mapMessageDto(dto);
-
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? real : m))
-      );
-    } catch (err: unknown) {
-      console.error("Error sending message", err);
-      setError("Failed to send message.");
-      // Remove optimistic message
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-    }
+  // Optimistic UI
+  const tempId = `temp-${Date.now()}`;
+  const optimistic: Message = {
+    id: tempId,
+    conversationId: selectedConversationId,
+    senderId: currentUserName,
+    senderName: currentUserName,
+    text: trimmed,
+    createdAt: new Date().toISOString(),
+    isMe: true,
+    gifUrl: gifUrl,
+    // optional: if your UI Message type supports it later
+    // attachmentId,
   };
+
+  setMessages((prev) => [...prev, optimistic]);
+
+  try {
+    const dto = await sendChatMessage(
+      selectedConversationId,
+      trimmed,
+      authToken,
+      gifUrl,
+      attachmentId
+    );
+
+    const real = mapMessageDto(dto);
+
+    setMessages((prev) => prev.map((m) => (m.id === tempId ? real : m)));
+  } catch (err: unknown) {
+    console.error("Error sending message", err);
+    setError("Failed to send message.");
+    setMessages((prev) => prev.filter((m) => m.id !== tempId));
+  }
+};
+
 
   const handleStartPrivateChat = async (user: ChatUserDto) => {
     try {
@@ -450,7 +459,11 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
             {/* ...existing code... */}
             
             <MessageList messages={messages} />
-            <MessageInput onSend={handleSendMessage} />
+            <MessageInput
+              chatId={selectedConversationId}
+              onSend={handleSendMessage}
+/>
+
             {isLoadingMessages && messages.length === 0 && (
               <div
                 style={{

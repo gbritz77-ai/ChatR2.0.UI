@@ -22,7 +22,10 @@ export interface ChatMessageDto {
   chatId: string;
   senderId: string;
   senderUserName?: string;
-  text: string;
+
+  // IMPORTANT: can be empty for attachment-only messages
+  text?: string;
+
   createdAt: string;
   gifUrl?: string;
 
@@ -57,7 +60,6 @@ export interface GroupChatDto {
 // ===== Helpers =====
 
 function applyToken(token: string) {
-  // If you're already calling setAuthToken() globally, you can remove token params entirely later.
   api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 }
 
@@ -94,7 +96,12 @@ export async function getChatMessages(
   return res.data;
 }
 
-// UPDATED: supports gifUrl + attachmentId
+type SendChatMessagePayload = {
+  text?: string;
+  gifUrl?: string;
+  attachmentId?: string;
+};
+
 export async function sendChatMessage(
   chatId: string,
   text: string,
@@ -104,13 +111,14 @@ export async function sendChatMessage(
 ): Promise<ChatMessageDto> {
   applyToken(token);
 
-  const payload: any = {};
+  const payload: SendChatMessagePayload = {};
 
-  // Allow sending an attachment-only message (no text)
-  if (text?.trim()) payload.text = text.trim();
+  const trimmed = (text ?? "").trim();
+  if (trimmed) payload.text = trimmed;
   if (gifUrl) payload.gifUrl = gifUrl;
   if (attachmentId) payload.attachmentId = attachmentId;
 
+  // allow attachment-only or gif-only messages, but not totally empty
   if (!payload.text && !payload.gifUrl && !payload.attachmentId) {
     throw new Error("Message is empty");
   }
@@ -157,7 +165,10 @@ export async function searchUsers(token: string, search: string): Promise<ChatUs
   return res.data;
 }
 
-export async function createPrivateChat(targetUserId: string, token: string): Promise<PrivateChatDto> {
+export async function createPrivateChat(
+  targetUserId: string,
+  token: string
+): Promise<PrivateChatDto> {
   applyToken(token);
 
   const payload = { targetUserId };
@@ -165,7 +176,12 @@ export async function createPrivateChat(targetUserId: string, token: string): Pr
 
   const res = await api.post<PrivateChatDto>("/Chats/private", payload);
 
-  console.log("[chatApi] POST /Chats/private status:", res.status, "data:", res.data);
+  console.log(
+    "[chatApi] POST /Chats/private status:",
+    res.status,
+    "data:",
+    res.data
+  );
 
   return res.data;
 }
@@ -182,12 +198,21 @@ export async function createGroupChat(
 
   const res = await api.post<GroupChatDto>("/Chats/group", payload);
 
-  console.log("[chatApi] POST /Chats/group status:", res.status, "data:", res.data);
+  console.log(
+    "[chatApi] POST /Chats/group status:",
+    res.status,
+    "data:",
+    res.data
+  );
 
   return res.data;
 }
 
-export async function addGroupMember(chatId: string, memberId: string, token: string): Promise<void> {
+export async function addGroupMember(
+  chatId: string,
+  memberId: string,
+  token: string
+): Promise<void> {
   applyToken(token);
 
   const payload = { userId: memberId };
@@ -202,14 +227,21 @@ export async function addGroupMember(chatId: string, memberId: string, token: st
   }
 }
 
-export async function removeGroupMember(chatId: string, memberId: string, token: string): Promise<void> {
+export async function removeGroupMember(
+  chatId: string,
+  memberId: string,
+  token: string
+): Promise<void> {
   applyToken(token);
 
   const res = await api.delete(
     `/Chats/${encodeURIComponent(chatId)}/members/${encodeURIComponent(memberId)}`
   );
 
-  console.log("[chatApi] DELETE /Chats/{chatId}/members/{memberId} status:", res.status);
+  console.log(
+    "[chatApi] DELETE /Chats/{chatId}/members/{memberId} status:",
+    res.status
+  );
 
   if (res.status < 200 || res.status >= 300) {
     throw new Error(`Failed to remove member: ${res.status}`);
@@ -219,7 +251,9 @@ export async function removeGroupMember(chatId: string, memberId: string, token:
 export async function getGroupMembers(chatId: string, token: string): Promise<ChatUserDto[]> {
   applyToken(token);
 
-  const res = await api.get<ChatUserDto[]>(`/Chats/${encodeURIComponent(chatId)}/members`);
+  const res = await api.get<ChatUserDto[]>(
+    `/Chats/${encodeURIComponent(chatId)}/members`
+  );
 
   console.log(
     "[chatApi] GET /Chats/{chatId}/members status:",
