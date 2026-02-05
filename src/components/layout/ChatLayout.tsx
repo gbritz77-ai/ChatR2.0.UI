@@ -104,7 +104,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       conversationId: dto.chatId,
       senderId: dto.senderId,
       senderName,
-      text: dto.text,
+      text: dto.text ?? "",
       createdAt: dto.createdAt,
       isMe: senderName.toLowerCase() === meLower,
       gifUrl: dto.gifUrl,
