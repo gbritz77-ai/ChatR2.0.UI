@@ -11,6 +11,12 @@ export interface ChatDto {
   otherUserName?: string | null;
 }
 
+export interface ChatAttachmentDto {
+  attachmentId: string;
+  fileName: string;
+  contentType: string;
+}
+
 export interface ChatMessageDto {
   id: string;
   chatId: string;
@@ -19,6 +25,9 @@ export interface ChatMessageDto {
   text: string;
   createdAt: string;
   gifUrl?: string;
+
+  // NEW: attachment info (if your backend returns it)
+  attachment?: ChatAttachmentDto;
 }
 
 export interface PrivateChatDto {
@@ -85,17 +94,26 @@ export async function getChatMessages(
   return res.data;
 }
 
+// UPDATED: supports gifUrl + attachmentId
 export async function sendChatMessage(
   chatId: string,
   text: string,
   token: string,
-  gifUrl?: string
+  gifUrl?: string,
+  attachmentId?: string
 ): Promise<ChatMessageDto> {
   applyToken(token);
 
   const payload: any = {};
-  if (text.trim()) payload.text = text.trim();
+
+  // Allow sending an attachment-only message (no text)
+  if (text?.trim()) payload.text = text.trim();
   if (gifUrl) payload.gifUrl = gifUrl;
+  if (attachmentId) payload.attachmentId = attachmentId;
+
+  if (!payload.text && !payload.gifUrl && !payload.attachmentId) {
+    throw new Error("Message is empty");
+  }
 
   console.log("[chatApi] POST /Chats/{chatId}/messages payload:", payload);
 
@@ -126,10 +144,7 @@ export async function markChatRead(chatId: string, token: string): Promise<void>
   }
 }
 
-export async function searchUsers(
-  token: string,
-  search: string
-): Promise<ChatUserDto[]> {
+export async function searchUsers(token: string, search: string): Promise<ChatUserDto[]> {
   applyToken(token);
 
   const trimmed = search.trim();
@@ -142,10 +157,7 @@ export async function searchUsers(
   return res.data;
 }
 
-export async function createPrivateChat(
-  targetUserId: string,
-  token: string
-): Promise<PrivateChatDto> {
+export async function createPrivateChat(targetUserId: string, token: string): Promise<PrivateChatDto> {
   applyToken(token);
 
   const payload = { targetUserId };
@@ -153,12 +165,7 @@ export async function createPrivateChat(
 
   const res = await api.post<PrivateChatDto>("/Chats/private", payload);
 
-  console.log(
-    "[chatApi] POST /Chats/private status:",
-    res.status,
-    "data:",
-    res.data
-  );
+  console.log("[chatApi] POST /Chats/private status:", res.status, "data:", res.data);
 
   return res.data;
 }
@@ -175,30 +182,18 @@ export async function createGroupChat(
 
   const res = await api.post<GroupChatDto>("/Chats/group", payload);
 
-  console.log(
-    "[chatApi] POST /Chats/group status:",
-    res.status,
-    "data:",
-    res.data
-  );
+  console.log("[chatApi] POST /Chats/group status:", res.status, "data:", res.data);
 
   return res.data;
 }
 
-export async function addGroupMember(
-  chatId: string,
-  memberId: string,
-  token: string
-): Promise<void> {
+export async function addGroupMember(chatId: string, memberId: string, token: string): Promise<void> {
   applyToken(token);
 
   const payload = { userId: memberId };
   console.log("[chatApi] POST /Chats/{chatId}/members payload:", payload);
 
-  const res = await api.post(
-    `/Chats/${encodeURIComponent(chatId)}/members`,
-    payload
-  );
+  const res = await api.post(`/Chats/${encodeURIComponent(chatId)}/members`, payload);
 
   console.log("[chatApi] POST /Chats/{chatId}/members status:", res.status);
 
@@ -207,36 +202,24 @@ export async function addGroupMember(
   }
 }
 
-export async function removeGroupMember(
-  chatId: string,
-  memberId: string,
-  token: string
-): Promise<void> {
+export async function removeGroupMember(chatId: string, memberId: string, token: string): Promise<void> {
   applyToken(token);
 
   const res = await api.delete(
     `/Chats/${encodeURIComponent(chatId)}/members/${encodeURIComponent(memberId)}`
   );
 
-  console.log(
-    "[chatApi] DELETE /Chats/{chatId}/members/{memberId} status:",
-    res.status
-  );
+  console.log("[chatApi] DELETE /Chats/{chatId}/members/{memberId} status:", res.status);
 
   if (res.status < 200 || res.status >= 300) {
     throw new Error(`Failed to remove member: ${res.status}`);
   }
 }
 
-export async function getGroupMembers(
-  chatId: string,
-  token: string
-): Promise<ChatUserDto[]> {
+export async function getGroupMembers(chatId: string, token: string): Promise<ChatUserDto[]> {
   applyToken(token);
 
-  const res = await api.get<ChatUserDto[]>(
-    `/Chats/${encodeURIComponent(chatId)}/members`
-  );
+  const res = await api.get<ChatUserDto[]>(`/Chats/${encodeURIComponent(chatId)}/members`);
 
   console.log(
     "[chatApi] GET /Chats/{chatId}/members status:",

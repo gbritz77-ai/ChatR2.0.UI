@@ -2,7 +2,7 @@ import axios from "axios";
 
 const apiBase = import.meta.env.VITE_API_BASE as string;
 
-// Safety check (as requested)
+// Safety check
 if (!apiBase || !apiBase.startsWith("https://")) {
   throw new Error("VITE_API_BASE must be absolute (https://...)");
 }
@@ -34,5 +34,45 @@ export async function login(usernameOrEmail: string, password: string) {
     usernameOrEmail,
     password,
   });
+  return res.data;
+}
+
+// -----------------------------
+// Attachments (S3 pre-signed)
+// -----------------------------
+
+export interface PresignUploadRequest {
+  chatId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}
+
+export interface PresignUploadResponse {
+  attachmentId: string;
+  key: string;
+  uploadUrl: string;
+  expiresAt: string;
+  fileName: string;
+  contentType: string;
+}
+
+export async function presignUpload(payload: PresignUploadRequest) {
+  const res = await api.post<PresignUploadResponse>("/attachments/presign-upload", payload);
+  return res.data;
+}
+
+export interface PresignDownloadRequest {
+  chatId: string;
+  attachmentId: string;
+}
+
+export interface PresignDownloadResponse {
+  downloadUrl: string;
+  expiresAt: string;
+}
+
+export async function presignDownload(payload: PresignDownloadRequest) {
+  const res = await api.post<PresignDownloadResponse>("/attachments/presign-download", payload);
   return res.data;
 }

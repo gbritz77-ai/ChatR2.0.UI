@@ -21,3 +21,20 @@ export interface Message {
   createdAt: string;        // ISO string
   gifUrl?: string;          // optional GIF URL
 }
+export type ChatAttachment = {
+  attachmentId: string;
+  fileName: string;
+  contentType: string;
+  size?: number;
+};
+
+export type ChatMessage = {
+  id: string;
+  chatId: string;
+  senderId: string;
+  text?: string;
+  createdAt: string;
+
+  // NEW:
+  attachment?: ChatAttachment;
+};
