@@ -9,6 +9,7 @@ export interface Conversation {
   unreadCount: number;
   type: ConversationType;   // "direct" or "group"
   isOnline?: boolean;       // optional for 1:1
+  otherUserId?: string;     // used for presence matching
 }
 
 export interface MessageAttachment {

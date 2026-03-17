@@ -9,6 +9,8 @@ export interface ChatDto {
   isGroup: boolean;
   unreadCount: number;
   otherUserName?: string | null;
+  otherUserId?: string | null;
+  otherUserLastSeenAt?: string | null; // ISO string
 }
 
 export interface ChatAttachmentDto {

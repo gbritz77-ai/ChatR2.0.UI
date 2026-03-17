@@ -1,7 +1,7 @@
 // src/components/layout/ChatLayout.tsx
 
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import * as signalR from "@microsoft/signalr";
 import ConversationList from "../chat/ConversationList";
 import ChatHeader from "../chat/ChatHeader";
 import MessageList from "../chat/MessageList";
@@ -24,6 +24,13 @@ import {
 import { presignDownload } from "../../api";
 import "../../styles/chat.css";
 
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+function isOnlineFromLastSeen(lastSeenAt?: string | null): boolean {
+  if (!lastSeenAt) return false;
+  return Date.now() - new Date(lastSeenAt).getTime() < ONLINE_THRESHOLD_MS;
+}
+
 // --- GroupMembersPanel wrapper for minimize/expand ---
 const GroupMembersPanel: React.FC<{
   chatId: string;
@@ -33,9 +40,6 @@ const GroupMembersPanel: React.FC<{
 }> = ({ chatId, token, currentUserName, onRefresh }) => {
   const [expanded, setExpanded] = useState(true);
   const [memberCount, setMemberCount] = useState<number | null>(null);
-
-  // Callback to get member count from GroupMembers
-  const handleMemberCount = (count: number) => setMemberCount(count);
 
   return (
     <div style={{ margin: '12px 0', border: '1px solid #14532d', borderRadius: 8, background: 'rgba(16,32,32,0.12)' }}>
@@ -52,7 +56,7 @@ const GroupMembersPanel: React.FC<{
             token={token}
             currentUserName={currentUserName}
             onRefresh={onRefresh}
-            onMemberCount={handleMemberCount}
+            onMemberCount={setMemberCount}
           />
         </div>
       )}
@@ -72,8 +76,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   onLogout,
 }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] =
-    useState<string>("");
+  const [selectedConversationId, setSelectedConversationId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -85,6 +88,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const [userResults, setUserResults] = useState<ChatUserDto[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
 
+  // Refs to avoid stale closures in SignalR event handlers
+  const selectedConversationIdRef = useRef(selectedConversationId);
+  useEffect(() => { selectedConversationIdRef.current = selectedConversationId; }, [selectedConversationId]);
+
   const meLower = currentUserName.toLowerCase();
 
   // Map backend ChatDto -> UI Conversation
@@ -94,7 +101,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     lastMessagePreview: "",
     unreadCount: dto.unreadCount ?? 0,
     type: dto.isGroup ? "group" : "direct",
-    isOnline: undefined,
+    isOnline: dto.isGroup ? undefined : isOnlineFromLastSeen(dto.otherUserLastSeenAt),
+    otherUserId: dto.otherUserId ?? undefined,
   });
 
   // Map backend ChatMessageDto -> UI Message
@@ -122,6 +130,88 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     return result.downloadUrl;
   };
 
+  // ── SignalR ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!authToken) return;
+
+    const apiBase = (import.meta.env.VITE_API_BASE as string).replace(/\/+$/, "");
+    const hubUrl = `${apiBase}/hubs/chat?access_token=${encodeURIComponent(authToken)}`;
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(hubUrl)
+      .withAutomaticReconnect()
+      .build();
+
+    // New message arrives
+    connection.on("ReceiveMessage", (dto: ChatMessageDto) => {
+      const chatId = dto.chatId;
+      if (chatId === selectedConversationIdRef.current) {
+        // Add to visible message list (only if not already there from optimistic update)
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === dto.id)) return prev;
+          const senderName = dto.senderUserName ?? dto.senderId;
+          return [...prev, {
+            id: dto.id,
+            conversationId: dto.chatId,
+            senderId: dto.senderId,
+            senderName,
+            text: dto.text ?? "",
+            createdAt: dto.createdAt,
+            isMe: senderName.toLowerCase() === meLower,
+            gifUrl: dto.gifUrl,
+            attachments: dto.attachments?.map((a) => ({ id: a.id, fileName: a.fileName, contentType: a.contentType })),
+          }];
+        });
+      } else {
+        // Increment unread for background chat (only messages from others)
+        const senderName = (dto.senderUserName ?? dto.senderId).toLowerCase();
+        if (senderName !== meLower) {
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === chatId ? { ...c, unreadCount: c.unreadCount + 1 } : c
+            )
+          );
+        }
+      }
+    });
+
+    // Sidebar refresh hint (e.g. unread counts from server)
+    connection.on("ChatUpdated", (data: { chatId: string; lastMessagePreview?: string }) => {
+      // Only increment unread if the chat is not currently open
+      if (data.chatId !== selectedConversationIdRef.current) {
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === data.chatId
+              ? {
+                  ...c,
+                  unreadCount: c.unreadCount + 1,
+                  lastMessagePreview: data.lastMessagePreview ?? c.lastMessagePreview,
+                }
+              : c
+          )
+        );
+      }
+    });
+
+    // Presence updates
+    connection.on("UserPresenceChanged", (data: { userId: string; isOnline: boolean }) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.otherUserId === data.userId ? { ...c, isOnline: data.isOnline } : c
+        )
+      );
+    });
+
+    connection.start()
+      .then(() => console.log("[SignalR] Connected"))
+      .catch((err) => console.error("[SignalR] Connection error", err));
+
+    return () => {
+      connection.stop();
+    };
+  }, [authToken]);
+  // ────────────────────────────────────────────────────────────────────────
+
   // Load chats on startup / token change
   useEffect(() => {
     if (!authToken) return;
@@ -136,7 +226,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
         setConversations(uiConversations);
 
-        // Auto-select first chat if none selected
         if (uiConversations.length > 0) {
           setSelectedConversationId((prev) => prev || uiConversations[0].id);
         }
@@ -160,19 +249,11 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         setIsLoadingMessages(true);
         setError(null);
 
-        const dtos = await getChatMessages(
-          selectedConversationId,
-          authToken,
-          0,
-          50
-        );
-        const uiMessages = dtos.map(mapMessageDto);
-        setMessages(uiMessages);
+        const dtos = await getChatMessages(selectedConversationId, authToken, 0, 50);
+        setMessages(dtos.map(mapMessageDto));
 
-        // mark as read on the server and ensure UI reflects it
         try {
           await markChatRead(selectedConversationId, authToken);
-          // ensure unread badge is cleared locally after server acknowledgement
           setConversations((prev) =>
             prev.map((c) => (c.id === selectedConversationId ? { ...c, unreadCount: 0 } : c))
           );
@@ -190,23 +271,19 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     loadMessages();
   }, [authToken, selectedConversationId, currentUserName]);
 
-  // Select conversation and immediately clear its unread badge in the UI
   const handleSelectConversation = (id: string) => {
     setSelectedConversationId(id);
-
-    // Optimistically clear unread count locally so the UI updates immediately
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
     );
   };
 
-  // User search – only hit API when there is actual search text
+  // User search
   useEffect(() => {
     if (!authToken) return;
 
     const trimmed = userSearch.trim();
 
-    // If nothing typed, hide results & don't call the API
     if (!trimmed) {
       setUserResults([]);
       setIsSearchingUsers(false);
@@ -223,81 +300,51 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       } finally {
         setIsSearchingUsers(false);
       }
-    }, 300); // debounce
+    }, 300);
 
     return () => window.clearTimeout(handle);
   }, [userSearch, authToken]);
 
-  const selectedConversation = conversations.find(
-    (c) => c.id === selectedConversationId
-  );
+  const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
 
-  const handleSendMessage = async (
-  text: string,
-  gifUrl?: string,
-  attachmentId?: string
-) => {
-  if (!selectedConversationId) return;
+  const handleSendMessage = async (text: string, gifUrl?: string, attachmentId?: string) => {
+    if (!selectedConversationId) return;
 
-  const trimmed = text.trim();
+    const trimmed = text.trim();
+    if (!trimmed && !gifUrl && !attachmentId) return;
 
-  // allow attachment-only or gif-only
-  if (!trimmed && !gifUrl && !attachmentId) return;
-
-  // Optimistic UI
-  const tempId = `temp-${Date.now()}`;
-  const optimistic: Message = {
-    id: tempId,
-    conversationId: selectedConversationId,
-    senderId: currentUserName,
-    senderName: currentUserName,
-    text: trimmed,
-    createdAt: new Date().toISOString(),
-    isMe: true,
-    gifUrl: gifUrl,
-    // optional: if your UI Message type supports it later
-    // attachmentId,
-  };
-
-  setMessages((prev) => [...prev, optimistic]);
-
-  try {
-    const dto = await sendChatMessage(
-      selectedConversationId,
-      trimmed,
-      authToken,
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Message = {
+      id: tempId,
+      conversationId: selectedConversationId,
+      senderId: currentUserName,
+      senderName: currentUserName,
+      text: trimmed,
+      createdAt: new Date().toISOString(),
+      isMe: true,
       gifUrl,
-      attachmentId
-    );
+    };
 
-    const real = mapMessageDto(dto);
+    setMessages((prev) => [...prev, optimistic]);
 
-    setMessages((prev) => prev.map((m) => (m.id === tempId ? real : m)));
-  } catch (err: unknown) {
-    console.error("Error sending message", err);
-    setError("Failed to send message.");
-    setMessages((prev) => prev.filter((m) => m.id !== tempId));
-  }
-};
-
+    try {
+      const dto = await sendChatMessage(selectedConversationId, trimmed, authToken, gifUrl, attachmentId);
+      const real = mapMessageDto(dto);
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? real : m)));
+    } catch (err: unknown) {
+      console.error("Error sending message", err);
+      setError("Failed to send message.");
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    }
+  };
 
   const handleStartPrivateChat = async (user: ChatUserDto) => {
     try {
       setError(null);
-
-      // 1) Create or reuse private chat on the server
       const dto = await createPrivateChat(user.id, authToken);
-      const chatId = dto.id;
-
-      // 2) Refresh full chat list from API so UI is in sync
       const chatDtos = await getChats(authToken);
-      const uiConversations = chatDtos.map(mapChatDto);
-      setConversations(uiConversations);
-
-      // 3) Select this chat (use centralized handler to clear unread)
-      handleSelectConversation(chatId);
-
-      // 4) Clear search so dropdown disappears
+      setConversations(chatDtos.map(mapChatDto));
+      handleSelectConversation(dto.id);
       setUserSearch("");
       setUserResults([]);
     } catch (err: unknown) {
@@ -310,18 +357,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     try {
       setError(null);
       setIsCreatingGroup(true);
-
-      // 1) Create group on the server
       const dto = await createGroupChat(groupName, memberIds, authToken);
-      const chatId = dto.id;
-
-      // 2) Refresh full chat list from API so UI is in sync
       const chatDtos = await getChats(authToken);
-      const uiConversations = chatDtos.map(mapChatDto);
-      setConversations(uiConversations);
-
-      // 3) Select this chat (use centralized handler to clear unread)
-      handleSelectConversation(chatId);
+      setConversations(chatDtos.map(mapChatDto));
+      handleSelectConversation(dto.id);
     } catch (err: unknown) {
       console.error("Error creating group chat", err);
       setError("Failed to create group chat.");
@@ -331,179 +370,101 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   };
 
   return (
-  <div className="chat-root">
-    {/* Top bar: logo + logged-in user + logout */}
-    <div className="chat-topbar" style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      padding: '0 24px',
-      width: '100%',
-      position: 'fixed',
-      top: 0,
-      right: 0,
-      background: '#0f172a',
-      zIndex: 1000,
-      height: '56px',
-      boxSizing: 'border-box',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-        <span className="chat-logo">ChatR 2.0</span>
-        <span className="chat-topbar-user">Logged in as {currentUserName}</span>
-        <button className="logout-button" onClick={onLogout}>
-          Logout
-        </button>
-      </div>
-    </div>
-
-    {/* Main row: sidebar + chat area */}
-    <div className="chat-body" style={{ marginTop: '56px' }}>
-      <aside className="chat-sidebar">
-        <div className="chat-sidebar-header">
-          {/* Removed ChatR 2.0 logo from sidebar header */}
+    <div className="chat-root">
+      <div className="chat-topbar" style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        padding: '0 24px', width: '100%', position: 'fixed', top: 0, right: 0,
+        background: '#0f172a', zIndex: 1000, height: '56px', boxSizing: 'border-box',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <span className="chat-logo">ChatR 2.0</span>
+          <span className="chat-topbar-user">Logged in as {currentUserName}</span>
+          <button className="logout-button" onClick={onLogout}>Logout</button>
         </div>
+      </div>
 
-        {/* Group Creation */}
-        <GroupCreation
-          onCreateGroup={handleCreateGroup}
-          isLoading={isCreatingGroup}
-          token={authToken}
-        />
+      <div className="chat-body" style={{ marginTop: '56px' }}>
+        <aside className="chat-sidebar">
+          <div className="chat-sidebar-header" />
 
-        {/* User search + dropdown to start private chat */}
-        <div className="user-search-container">
-          <div className="user-search-label">Start private chat</div>
-          <input
-            className="user-search-input"
-            type="text"
-            placeholder="Search users by name or email"
-            value={userSearch}
-            onChange={(e) => setUserSearch(e.target.value)}
-          />
-          {/* Only show hints/results when there is some text */}
-          {userSearch.trim() && isSearchingUsers && (
-            <div className="user-search-hint">Searching…</div>
-          )}
-          {userSearch.trim() &&
-            !isSearchingUsers &&
-            userResults.length === 0 && (
+          <GroupCreation onCreateGroup={handleCreateGroup} isLoading={isCreatingGroup} token={authToken} />
+
+          <div className="user-search-container">
+            <div className="user-search-label">Start private chat</div>
+            <input
+              className="user-search-input"
+              type="text"
+              placeholder="Search users by name or email"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+            />
+            {userSearch.trim() && isSearchingUsers && <div className="user-search-hint">Searching…</div>}
+            {userSearch.trim() && !isSearchingUsers && userResults.length === 0 && (
               <div className="user-search-hint">No users found</div>
             )}
-          {userSearch.trim() && userResults.length > 0 && (
-            <div className="user-search-results">
-              {userResults.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  className="user-search-item"
-                  onClick={() => handleStartPrivateChat(u)}
-                >
-                  <div className="user-search-item-avatar">
-                    {u.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="user-search-item-text">
-                    <div className="user-search-item-name">
-                      {u.username}
+            {userSearch.trim() && userResults.length > 0 && (
+              <div className="user-search-results">
+                {userResults.map((u) => (
+                  <button key={u.id} type="button" className="user-search-item" onClick={() => handleStartPrivateChat(u)}>
+                    <div className="user-search-item-avatar">{u.username.charAt(0).toUpperCase()}</div>
+                    <div className="user-search-item-text">
+                      <div className="user-search-item-name">{u.username}</div>
+                      {u.email && <div className="user-search-item-email">{u.email}</div>}
                     </div>
-                    {u.email && (
-                      <div className="user-search-item-email">
-                        {u.email}
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {isLoadingConversations && conversations.length === 0 ? (
-          <div
-            style={{
-              padding: "0.75rem",
-              fontSize: "0.8rem",
-              color: "#9ca3af",
-            }}
-          >
-            Loading chats…
-          </div>
-        ) : (
-          <ConversationList
-            conversations={conversations}
-            selectedId={selectedConversationId}
-            onSelect={handleSelectConversation}
-          />
-        )}
-      </aside>
-
-      <main className="chat-main">
-        {error && (
-          <div
-            style={{
-              padding: "6px 10px",
-              fontSize: "0.8rem",
-              backgroundColor: "rgba(248,113,113,0.12)",
-              color: "#fecaca",
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {selectedConversation ? (
-          <>
-            <ChatHeader conversation={selectedConversation} />
-            
-            {/* Show group members panel for group chats */}
-            {selectedConversation.type === "group" && (
-              <GroupMembersPanel
-                chatId={selectedConversation.id}
-                token={authToken}
-                currentUserName={currentUserName}
-                onRefresh={() => {
-                  getChats(authToken).then((chatDtos) => {
-                    setConversations(chatDtos.map(mapChatDto));
-                  });
-                }}
-              />
-            )}
-            {/* ...existing code... */}
-            
-            <MessageList messages={messages} onDownloadAttachment={handleGetAttachmentUrl} />
-            <MessageInput
-              chatId={selectedConversationId}
-              onSend={handleSendMessage}
-/>
-
-            {isLoadingMessages && messages.length === 0 && (
-              <div
-                style={{
-                  padding: "0.5rem 0.75rem",
-                  fontSize: "0.8rem",
-                  color: "#9ca3af",
-                }}
-              >
-                Loading messages…
+                  </button>
+                ))}
               </div>
             )}
-          </>
-        ) : (
-          <div className="chat-empty-state">
-            <h2>
-              {isLoadingConversations ? "Loading chats…" : "Select a chat"}
-            </h2>
-            {!isLoadingConversations && (
-              <p>
-                Create a private or group chat via the API and it will appear
-                here.
-              </p>
-            )}
           </div>
-        )}
-      </main>
+
+          {isLoadingConversations && conversations.length === 0 ? (
+            <div style={{ padding: "0.75rem", fontSize: "0.8rem", color: "#9ca3af" }}>Loading chats…</div>
+          ) : (
+            <ConversationList conversations={conversations} selectedId={selectedConversationId} onSelect={handleSelectConversation} />
+          )}
+        </aside>
+
+        <main className="chat-main">
+          {error && (
+            <div style={{ padding: "6px 10px", fontSize: "0.8rem", backgroundColor: "rgba(248,113,113,0.12)", color: "#fecaca" }}>
+              {error}
+            </div>
+          )}
+
+          {selectedConversation ? (
+            <>
+              <ChatHeader conversation={selectedConversation} />
+
+              {selectedConversation.type === "group" && (
+                <GroupMembersPanel
+                  chatId={selectedConversation.id}
+                  token={authToken}
+                  currentUserName={currentUserName}
+                  onRefresh={() => {
+                    getChats(authToken).then((chatDtos) => setConversations(chatDtos.map(mapChatDto)));
+                  }}
+                />
+              )}
+
+              <MessageList messages={messages} onDownloadAttachment={handleGetAttachmentUrl} />
+              <MessageInput chatId={selectedConversationId} onSend={handleSendMessage} />
+
+              {isLoadingMessages && messages.length === 0 && (
+                <div style={{ padding: "0.5rem 0.75rem", fontSize: "0.8rem", color: "#9ca3af" }}>
+                  Loading messages…
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="chat-empty-state">
+              <h2>{isLoadingConversations ? "Loading chats…" : "Select a chat"}</h2>
+              {!isLoadingConversations && <p>Create a private or group chat via the API and it will appear here.</p>}
+            </div>
+          )}
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default ChatLayout;
