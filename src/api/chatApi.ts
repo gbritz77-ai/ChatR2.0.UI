@@ -12,9 +12,10 @@ export interface ChatDto {
 }
 
 export interface ChatAttachmentDto {
-  attachmentId: string;
+  id: string;
   fileName: string;
   contentType: string;
+  url: string; // S3 key
 }
 
 export interface ChatMessageDto {
@@ -22,16 +23,13 @@ export interface ChatMessageDto {
   chatId: string;
   senderId: string;
   senderUserName?: string;
-
-  // IMPORTANT: can be empty for attachment-only messages
   text?: string;
-
   createdAt: string;
   gifUrl?: string;
 
-  // NEW: attachment info (if your backend returns it)
-  attachment?: ChatAttachmentDto;
+  attachments?: ChatAttachmentDto[]; // ✅ list
 }
+
 
 export interface PrivateChatDto {
   id: string;
@@ -99,8 +97,9 @@ export async function getChatMessages(
 type SendChatMessagePayload = {
   text?: string;
   gifUrl?: string;
-  attachmentId?: string;
+  attachmentIds?: string[];
 };
+
 
 export async function sendChatMessage(
   chatId: string,
@@ -112,14 +111,14 @@ export async function sendChatMessage(
   applyToken(token);
 
   const payload: SendChatMessagePayload = {};
-
   const trimmed = (text ?? "").trim();
+
   if (trimmed) payload.text = trimmed;
   if (gifUrl) payload.gifUrl = gifUrl;
-  if (attachmentId) payload.attachmentId = attachmentId;
+  if (attachmentId) payload.attachmentIds = [attachmentId]; // ✅ FIX
 
   // allow attachment-only or gif-only messages, but not totally empty
-  if (!payload.text && !payload.gifUrl && !payload.attachmentId) {
+  if (!payload.text && !payload.gifUrl && (!payload.attachmentIds || payload.attachmentIds.length === 0)) {
     throw new Error("Message is empty");
   }
 
@@ -130,15 +129,9 @@ export async function sendChatMessage(
     payload
   );
 
-  console.log(
-    "[chatApi] POST /Chats/{chatId}/messages status:",
-    res.status,
-    "data:",
-    res.data
-  );
-
   return res.data;
 }
+
 
 export async function markChatRead(chatId: string, token: string): Promise<void> {
   applyToken(token);

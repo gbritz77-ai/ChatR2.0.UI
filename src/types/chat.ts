@@ -11,6 +11,12 @@ export interface Conversation {
   isOnline?: boolean;       // optional for 1:1
 }
 
+export interface MessageAttachment {
+  id: string;
+  fileName: string;
+  contentType: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -20,6 +26,7 @@ export interface Message {
   text: string;
   createdAt: string;        // ISO string
   gifUrl?: string;          // optional GIF URL
+  attachments?: MessageAttachment[];
 }
 export type ChatAttachment = {
   attachmentId: string;

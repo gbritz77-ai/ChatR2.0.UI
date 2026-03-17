@@ -6,9 +6,10 @@ import MessageBubble from "./MessageBubble";
 
 interface Props {
   messages: Message[];
+  onDownloadAttachment: (attachmentId: string, chatId: string) => Promise<string>;
 }
 
-const MessageList: React.FC<Props> = ({ messages }) => {
+const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -25,7 +26,7 @@ const MessageList: React.FC<Props> = ({ messages }) => {
           key={m.id}
           className={`message-row ${m.isMe ? "me" : "them"}`}
         >
-          <MessageBubble message={m} />
+          <MessageBubble message={m} onDownloadAttachment={onDownloadAttachment} />
         </div>
       ))}
     </div>

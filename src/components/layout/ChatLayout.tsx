@@ -21,6 +21,7 @@ import {
   type ChatMessageDto,
   type ChatUserDto,
 } from "../../api/chatApi";
+import { presignDownload } from "../../api";
 import "../../styles/chat.css";
 
 // --- GroupMembersPanel wrapper for minimize/expand ---
@@ -108,7 +109,17 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       createdAt: dto.createdAt,
       isMe: senderName.toLowerCase() === meLower,
       gifUrl: dto.gifUrl,
+      attachments: dto.attachments?.map((a) => ({
+        id: a.id,
+        fileName: a.fileName,
+        contentType: a.contentType,
+      })),
     };
+  };
+
+  const handleGetAttachmentUrl = async (attachmentId: string, chatId: string): Promise<string> => {
+    const result = await presignDownload({ chatId, attachmentId });
+    return result.downloadUrl;
   };
 
   // Load chats on startup / token change
@@ -458,7 +469,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
             )}
             {/* ...existing code... */}
             
-            <MessageList messages={messages} />
+            <MessageList messages={messages} onDownloadAttachment={handleGetAttachmentUrl} />
             <MessageInput
               chatId={selectedConversationId}
               onSend={handleSendMessage}
