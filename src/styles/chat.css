@@ -294,50 +294,49 @@ body,
 
 /* Common bubble look */
 .message-bubble {
-  max-width: 60%;
-  border-radius: 16px;
-  padding: 8px 12px;
-  font-size: 0.85rem;
-  line-height: 1.4;
+  max-width: 65%;
+  padding: 6px 10px 4px;
+  font-size: 0.875rem;
+  line-height: 1.45;
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  word-break: break-word;
 }
 
-/* My messages – right side (blue) */
-.message-row.me .message-bubble {
+/* My messages – right, teal/blue, sharp top-right corner */
+.message-bubble.me {
   background: var(--accent);
   color: #020617;
+  border-radius: 16px 4px 16px 16px;
+  align-items: flex-end;
 }
 
-/* Incoming messages – left side (dark) */
-.message-row.them .message-bubble {
-  background: #020617;
+/* Their messages – left, dark, sharp top-left corner */
+.message-bubble.them {
+  background: #1e293b;
   border: 1px solid var(--border-subtle);
-}
-
-/* header inside bubble: name + time */
-.message-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 2px;
+  color: var(--text-main);
+  border-radius: 4px 16px 16px 16px;
+  align-items: flex-start;
 }
 
 .message-sender {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-/* better contrast for my own sender label */
-.message-row.me .message-sender {
-  color: #0b1120;
-  opacity: 0.8;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 1px;
 }
 
 .message-time {
-  font-size: 0.7rem;
-  opacity: 0.7;
+  font-size: 0.68rem;
+  opacity: 0.6;
+  align-self: flex-end;
+  margin-top: 2px;
+}
+
+.message-bubble.me .message-time {
+  color: #0b1120;
 }
 
 .message-text {

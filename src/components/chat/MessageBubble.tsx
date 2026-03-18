@@ -60,16 +60,10 @@ const AttachmentItem: React.FC<{
 
 const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment }) => {
   return (
-    <div className="message-bubble">
-      <div className="message-meta">
+    <div className={`message-bubble ${message.isMe ? "me" : "them"}`}>
+      {!message.isMe && (
         <span className="message-sender">{message.senderName}</span>
-        <span className="message-time">
-          {new Date(message.createdAt).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </span>
-      </div>
+      )}
       {message.gifUrl && (
         <img
           src={message.gifUrl}
@@ -95,6 +89,12 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment }) => {
           ))}
         </div>
       )}
+      <span className="message-time">
+        {new Date(message.createdAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </span>
     </div>
   );
 };
