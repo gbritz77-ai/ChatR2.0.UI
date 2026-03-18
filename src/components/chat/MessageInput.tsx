@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import GifPicker from "./GifPicker";
 import Picker from "@emoji-mart/react";
 import { presignUpload } from "../../api";
+import { useTheme } from "../../context/ThemeContext";
 
 interface Props {
   chatId: string;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
+  const { theme, tokens } = useTheme();
   const [text, setText] = useState("");
   const [selectedGifUrl, setSelectedGifUrl] = useState<string | null>(null);
   const [showGifPicker, setShowGifPicker] = useState(false);
@@ -112,10 +114,21 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
     }
   };
 
+  const iconBtnStyle = (color: string): React.CSSProperties => ({
+    borderRadius: "999px",
+    border: `1px solid ${tokens.border2}`,
+    background: "transparent",
+    color,
+    padding: "8px 12px",
+    cursor: busy ? "not-allowed" : "pointer",
+    fontSize: "1rem",
+    flexShrink: 0,
+  });
+
   return (
     <div className="message-input-bar" style={{ position: "relative" }}>
       {error && (
-        <div style={{ color: "#ef4444", padding: "6px 10px", fontSize: "0.85rem" }}>
+        <div style={{ color: tokens.danger, padding: "6px 10px", fontSize: "0.85rem" }}>
           {error}
         </div>
       )}
@@ -132,7 +145,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
 
       {showEmojiPicker && (
         <div style={{ position: "absolute", bottom: 60, left: 60, zIndex: 20 }}>
-          <Picker onEmojiSelect={handleEmojiSelect} theme="dark" />
+          <Picker onEmojiSelect={handleEmojiSelect} theme={theme} />
         </div>
       )}
 
@@ -140,7 +153,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
         <div
           style={{
             padding: "8px",
-            borderBottom: "1px solid #374151",
+            borderBottom: `1px solid ${tokens.border2}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -159,7 +172,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
             style={{
               background: "none",
               border: "none",
-              color: "#ef4444",
+              color: tokens.danger,
               cursor: busy ? "not-allowed" : "pointer",
               fontSize: "1.2rem",
             }}
@@ -173,7 +186,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
         <div
           style={{
             padding: "8px",
-            borderBottom: "1px solid #374151",
+            borderBottom: `1px solid ${tokens.border2}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -181,10 +194,10 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
           }}
         >
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ color: "#e5e7eb", fontSize: "0.85rem" }}>
+            <span style={{ color: tokens.textMain, fontSize: "0.85rem" }}>
               📎 {selectedFile.name}
             </span>
-            <span style={{ color: "#94a3b8", fontSize: "0.75rem" }}>
+            <span style={{ color: tokens.textMuted, fontSize: "0.75rem" }}>
               {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
             </span>
           </div>
@@ -195,7 +208,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
             style={{
               background: "none",
               border: "none",
-              color: "#ef4444",
+              color: tokens.danger,
               cursor: busy ? "not-allowed" : "pointer",
               fontSize: "1.2rem",
             }}
@@ -211,16 +224,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
           onClick={() => setShowEmojiPicker((v) => !v)}
           title="Add emoji"
           disabled={busy}
-          style={{
-            borderRadius: "999px",
-            border: "1px solid #374151",
-            background: "transparent",
-            color: "#fbbf24",
-            padding: "8px 12px",
-            cursor: busy ? "not-allowed" : "pointer",
-            fontSize: "1rem",
-            flexShrink: 0,
-          }}
+          style={iconBtnStyle("#f59e0b")}
         >
           😊
         </button>
@@ -230,16 +234,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
           onClick={() => setShowGifPicker(!showGifPicker)}
           title="Add GIF"
           disabled={busy}
-          style={{
-            borderRadius: "999px",
-            border: "1px solid #374151",
-            background: "transparent",
-            color: "#38bdf8",
-            padding: "8px 12px",
-            cursor: busy ? "not-allowed" : "pointer",
-            fontSize: "1rem",
-            flexShrink: 0,
-          }}
+          style={iconBtnStyle(tokens.accent)}
         >
           GIF
         </button>
@@ -261,16 +256,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
           onClick={() => fileInputRef.current?.click()}
           title="Attach file"
           disabled={busy}
-          style={{
-            borderRadius: "999px",
-            border: "1px solid #374151",
-            background: "transparent",
-            color: "#a78bfa",
-            padding: "8px 12px",
-            cursor: busy ? "not-allowed" : "pointer",
-            fontSize: "1rem",
-            flexShrink: 0,
-          }}
+          style={iconBtnStyle("#a78bfa")}
         >
           📎
         </button>
@@ -289,11 +275,11 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
             width: "100%",
             resize: "none",
             borderRadius: "999px",
-            border: "1px solid #374151",
+            border: `1px solid ${tokens.border2}`,
             padding: "8px 12px",
             fontSize: "0.85rem",
-            backgroundColor: "#020617",
-            color: "#e5e7eb",
+            backgroundColor: tokens.bgInput,
+            color: tokens.textMain,
             outline: "none",
             fontFamily: "inherit",
             minHeight: "40px",
@@ -311,8 +297,8 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
             padding: "8px 16px",
             fontSize: "0.85rem",
             fontWeight: 500,
-            background: "#38bdf8",
-            color: "#020617",
+            background: tokens.accent,
+            color: tokens.textOnAccent,
             cursor: busy ? "not-allowed" : "pointer",
             flexShrink: 0,
             opacity: busy ? 0.8 : 1,

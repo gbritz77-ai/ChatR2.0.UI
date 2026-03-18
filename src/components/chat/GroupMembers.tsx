@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getGroupMembers, addGroupMember, removeGroupMember, searchUsers, type ChatUserDto } from "../../api/chatApi";
+import { useTheme } from "../../context/ThemeContext";
 
 interface Props {
   chatId: string;
@@ -18,6 +19,7 @@ const GroupMembers: React.FC<Props> = ({
   onRefresh,
   onMemberCount,
 }) => {
+  const { tokens } = useTheme();
   const [members, setMembers] = useState<ChatUserDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
@@ -124,8 +126,8 @@ const GroupMembers: React.FC<Props> = ({
       style={{
         padding: "12px",
         borderRadius: "8px",
-        backgroundColor: "rgba(34, 197, 94, 0.1)",
-        border: "1px solid rgba(34, 197, 94, 0.3)",
+        backgroundColor: tokens.accentSoft,
+        border: `1px solid ${tokens.border}`,
       }}
     >
       <div
@@ -136,14 +138,13 @@ const GroupMembers: React.FC<Props> = ({
           marginBottom: "8px",
         }}
       >
-       
         <button
           type="button"
           onClick={() => setShowAddMember(!showAddMember)}
           style={{
             background: "none",
             border: "none",
-            color: "#38bdf8",
+            color: tokens.accent,
             cursor: "pointer",
             fontSize: "1rem",
           }}
@@ -158,7 +159,7 @@ const GroupMembers: React.FC<Props> = ({
             padding: "6px 8px",
             borderRadius: "4px",
             backgroundColor: "rgba(248, 113, 113, 0.1)",
-            color: "#fecaca",
+            color: tokens.danger,
             fontSize: "0.75rem",
             marginBottom: "8px",
           }}
@@ -168,7 +169,7 @@ const GroupMembers: React.FC<Props> = ({
       )}
 
       {showAddMember && (
-        <div style={{ marginBottom: "8px", paddingBottom: "8px", borderBottom: "1px solid rgba(34, 197, 94, 0.2)" }}>
+        <div style={{ marginBottom: "8px", paddingBottom: "8px", borderBottom: `1px solid ${tokens.border}` }}>
           <input
             type="text"
             placeholder="Search users..."
@@ -181,9 +182,9 @@ const GroupMembers: React.FC<Props> = ({
               width: "100%",
               padding: "6px 8px",
               borderRadius: "4px",
-              border: "1px solid #374151",
-              backgroundColor: "#020617",
-              color: "#e5e7eb",
+              border: `1px solid ${tokens.border2}`,
+              backgroundColor: tokens.bgInput,
+              color: tokens.textMain,
               fontSize: "0.8rem",
               boxSizing: "border-box",
               outline: "none",
@@ -192,7 +193,7 @@ const GroupMembers: React.FC<Props> = ({
           />
 
           {userSearch.trim() && isSearchingUsers && (
-            <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>
+            <div style={{ fontSize: "0.75rem", color: tokens.textMuted }}>
               Searching…
             </div>
           )}
@@ -202,9 +203,9 @@ const GroupMembers: React.FC<Props> = ({
               style={{
                 maxHeight: "150px",
                 overflowY: "auto",
-                backgroundColor: "#1a1f35",
+                backgroundColor: tokens.bgCard,
                 borderRadius: "4px",
-                border: "1px solid #374151",
+                border: `1px solid ${tokens.border2}`,
               }}
             >
               {userResults.map((user) => (
@@ -218,15 +219,14 @@ const GroupMembers: React.FC<Props> = ({
                     padding: "6px 8px",
                     background: "transparent",
                     border: "none",
-                    borderBottom: "1px solid #374151",
-                    color: "#e5e7eb",
+                    borderBottom: `1px solid ${tokens.border}`,
+                    color: tokens.textMain,
                     textAlign: "left",
                     cursor: isAddingMember ? "not-allowed" : "pointer",
                     fontSize: "0.8rem",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor =
-                      "rgba(56, 189, 248, 0.2)";
+                    e.currentTarget.style.backgroundColor = tokens.accentSoft;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "transparent";
@@ -241,7 +241,7 @@ const GroupMembers: React.FC<Props> = ({
       )}
 
       {isLoading && members.length === 0 && (
-        <div style={{ fontSize: "0.8rem", color: "#9ca3af" }}>
+        <div style={{ fontSize: "0.8rem", color: tokens.textMuted }}>
           Loading members…
         </div>
       )}
@@ -262,12 +262,12 @@ const GroupMembers: React.FC<Props> = ({
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "6px 8px",
-                backgroundColor: "rgba(15, 23, 42, 0.5)",
+                backgroundColor: tokens.accentSoft,
                 borderRadius: "4px",
                 fontSize: "0.8rem",
               }}
             >
-              <span style={{ color: createdByUserId && member.id === createdByUserId ? "#38bdf8" : "#e5e7eb", fontWeight: createdByUserId && member.id === createdByUserId ? 600 : 400 }}>
+              <span style={{ color: createdByUserId && member.id === createdByUserId ? tokens.accent : tokens.textMain, fontWeight: createdByUserId && member.id === createdByUserId ? 600 : 400 }}>
                 {member.username}{createdByUserId && member.id === createdByUserId ? " ★" : ""}
               </span>
               {member.username !== currentUserName && (
@@ -278,7 +278,7 @@ const GroupMembers: React.FC<Props> = ({
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#ef4444",
+                    color: tokens.danger,
                     cursor: isLoading ? "not-allowed" : "pointer",
                     fontSize: "0.85rem",
                     padding: "0",

@@ -25,6 +25,7 @@ import {
 } from "../../api/chatApi";
 import AvailabilityEditor from "../chat/AvailabilityEditor";
 import { presignDownload } from "../../api";
+import { useTheme } from "../../context/ThemeContext";
 import "../../styles/chat.css";
 
 const ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
@@ -44,14 +45,15 @@ const GroupMembersPanel: React.FC<{
 }> = ({ chatId, token, currentUserName, createdByUserId, onRefresh }) => {
   const [expanded, setExpanded] = useState(true);
   const [memberCount, setMemberCount] = useState<number | null>(null);
+  const { tokens } = useTheme();
 
   return (
-    <div style={{ margin: '12px 0', border: '1px solid #14532d', borderRadius: 8, background: 'rgba(16,32,32,0.12)' }}>
+    <div style={{ margin: '12px 0', border: `1px solid ${tokens.border}`, borderRadius: 8, background: tokens.accentSoft }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', cursor: 'pointer' }} onClick={() => setExpanded((v) => !v)}>
-        <span style={{ fontWeight: 600, fontSize: '1.1rem', color: '#e0f2fe' }}>
+        <span style={{ fontWeight: 600, fontSize: '1.1rem', color: tokens.textMain }}>
           Members{memberCount !== null ? ` (${memberCount})` : ''}
         </span>
-        <span style={{ fontSize: 20, color: '#e0f2fe' }}>{expanded ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 20, color: tokens.textMuted }}>{expanded ? '▲' : '▼'}</span>
       </div>
       {expanded && (
         <div style={{ padding: '0 16px 12px 16px' }}>
@@ -76,6 +78,21 @@ interface ChatLayoutProps {
   onInviteUser?: () => void;
 }
 
+const SunIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+);
+
 const ChatLayout: React.FC<ChatLayoutProps> = ({
   authToken,
   currentUserName,
@@ -90,6 +107,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { theme, tokens, toggleTheme } = useTheme();
   const connectionRef = useRef<signalR.HubConnection | null>(null);
 
   const [myAvailability, setMyAvailability] = useState<{ days: string; from: string; to: string } | null>(null);
@@ -465,7 +483,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       <div className="chat-topbar" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
         padding: '0 24px', width: '100%', position: 'fixed', top: 0, right: 0,
-        background: '#0f172a', zIndex: 1000, height: '56px', boxSizing: 'border-box',
+        background: tokens.bgMain, zIndex: 1000, height: '56px', boxSizing: 'border-box',
+        borderBottom: `1px solid ${tokens.border}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <span className="chat-logo">ChatR 2.0</span>
@@ -473,7 +492,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
             type="button"
             className="chat-topbar-user"
             onClick={() => setShowAvailabilityEditor((v) => !v)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: tokens.textMuted }}
           >
             Logged in as {currentUserName} ✎
           </button>
@@ -482,14 +501,25 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               type="button"
               onClick={onInviteUser}
               style={{
-                borderRadius: '999px', border: '1px solid #0369a1',
+                borderRadius: '999px', border: `1px solid ${tokens.accentBorder}`,
                 padding: '6px 16px', background: 'transparent',
-                color: '#38bdf8', fontSize: '0.85rem', cursor: 'pointer',
+                color: tokens.accent, fontSize: '0.85rem', cursor: 'pointer',
               }}
             >
               + Invite user
             </button>
           )}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{
+              background: 'none', border: `1px solid ${tokens.border}`, borderRadius: '999px',
+              padding: '6px 10px', cursor: 'pointer', color: tokens.textMuted, display: 'flex', alignItems: 'center',
+            }}
+          >
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </button>
           <button className="logout-button" onClick={onLogout}>Logout</button>
         </div>
         {showAvailabilityEditor && (
@@ -536,7 +566,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
           </div>
 
           {isLoadingConversations && conversations.length === 0 ? (
-            <div style={{ padding: "0.75rem", fontSize: "0.8rem", color: "#9ca3af" }}>Loading chats…</div>
+            <div style={{ padding: "0.75rem", fontSize: "0.8rem", color: tokens.textMuted }}>Loading chats…</div>
           ) : (
             <ConversationList conversations={conversations} selectedId={selectedConversationId} onSelect={handleSelectConversation} />
           )}
@@ -569,7 +599,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               <MessageInput chatId={selectedConversationId} onSend={handleSendMessage} />
 
               {isLoadingMessages && messages.length === 0 && (
-                <div style={{ padding: "0.5rem 0.75rem", fontSize: "0.8rem", color: "#9ca3af" }}>
+                <div style={{ padding: "0.5rem 0.75rem", fontSize: "0.8rem", color: tokens.textMuted }}>
                   Loading messages…
                 </div>
               )}

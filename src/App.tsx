@@ -3,11 +3,13 @@ import { login, setAuthToken } from "./api";
 import ChatLayout from "./components/layout/ChatLayout";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 import InviteUserModal from "./components/auth/InviteUserModal";
+import { useTheme } from "./context/ThemeContext";
 import "./styles/chat.css";
 import "./styles/auth.css";
 
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme();
   const [usernameOrEmail, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -52,9 +54,28 @@ export default function App() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <div className="auth-header">
-            <h2>ChatR2.0</h2>
-            <p>Sign in to continue.</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div className="auth-header">
+              <h2>ChatR2.0</h2>
+              <p>Sign in to continue.</p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              style={{
+                background: "rgba(255,255,255,0.10)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: "999px",
+                cursor: "pointer",
+                fontSize: "1rem",
+                padding: "6px 10px",
+                color: "inherit",
+                flexShrink: 0,
+              }}
+            >
+              {theme === "dark" ? "☀ Light" : "🌙 Dark"}
+            </button>
           </div>
 
           {error && <div className="auth-error">{error}</div>}

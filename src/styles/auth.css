@@ -119,3 +119,29 @@ body{
   margin: 0;
   display: block;     /* prevents someone else’s flex layout from forcing left */
 }
+
+/* ── Light theme overrides ───────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg: #f1f5f9;
+  --panel: rgba(255,255,255,0.80);
+  --panel-2: rgba(255,255,255,0.90);
+  --border: rgba(0,0,0,0.12);
+  --text: #1e293b;
+  --muted: #475569;
+  --shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+[data-theme="light"] .auth-error {
+  color: #1e293b;
+}
+
+[data-theme="light"] .auth-form input {
+  background: rgba(255,255,255,0.85);
+  border-color: rgba(0,0,0,0.18);
+  color: #1e293b;
+}
+
+[data-theme="light"] .auth-form input:focus {
+  border-color: rgba(3,105,161,0.6);
+  box-shadow: 0 0 0 4px rgba(3,105,161,0.12);
+}

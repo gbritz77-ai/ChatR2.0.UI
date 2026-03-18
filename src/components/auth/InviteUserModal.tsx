@@ -1,16 +1,23 @@
 import React, { useState } from "react";
 import { inviteUser } from "../../api";
+import { useTheme } from "../../context/ThemeContext";
 
 interface Props {
   onClose: () => void;
 }
 
 const InviteUserModal: React.FC<Props> = ({ onClose }) => {
+  const { tokens } = useTheme();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const inputStyle: React.CSSProperties = {
+    background: tokens.bgInput, border: `1px solid ${tokens.border2}`, borderRadius: 8,
+    padding: "9px 12px", color: tokens.textMain, fontSize: "0.9rem",
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,60 +45,60 @@ const InviteUserModal: React.FC<Props> = ({ onClose }) => {
 
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+      position: "fixed", inset: 0, background: tokens.bgOverlay,
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9000,
     }}>
       <div style={{
-        background: "#0f172a", border: "1px solid #1e3a5f", borderRadius: 12,
+        background: tokens.bgMain, border: `1px solid ${tokens.border}`, borderRadius: 12,
         padding: "32px 28px", width: 360, boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 style={{ color: "#e0f2fe", fontSize: "1.1rem", margin: 0 }}>Invite user</h2>
+          <h2 style={{ color: tokens.textMain, fontSize: "1.1rem", margin: 0 }}>Invite user</h2>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 20, cursor: "pointer" }}
+            style={{ background: "none", border: "none", color: tokens.textMuted, fontSize: 20, cursor: "pointer" }}
           >
             ×
           </button>
         </div>
 
-        <p style={{ color: "#9ca3af", fontSize: "0.82rem", marginBottom: 20 }}>
-          The user will receive an email with the app URL and a temporary password (<strong style={{ color: "#cbd5e1" }}>ImpTrack@2020</strong>). They will be prompted to change it on first login.
+        <p style={{ color: tokens.textMuted, fontSize: "0.82rem", marginBottom: 20 }}>
+          The user will receive an email with the app URL and a temporary password (<strong style={{ color: tokens.textMain }}>ImpTrack@2020</strong>). They will be prompted to change it on first login.
         </p>
 
         {error && (
-          <div style={{ background: "rgba(248,113,113,0.12)", color: "#fecaca", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: "0.82rem" }}>
+          <div style={{ background: "rgba(248,113,113,0.12)", color: tokens.danger, padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: "0.82rem" }}>
             {error}
           </div>
         )}
         {success && (
-          <div style={{ background: "rgba(16,185,129,0.12)", color: "#6ee7b7", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: "0.82rem" }}>
+          <div style={{ background: "rgba(16,185,129,0.12)", color: "#16a34a", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: "0.82rem" }}>
             {success}
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <label style={{ color: "#cbd5e1", fontSize: "0.82rem" }}>Username</label>
+            <label style={{ color: tokens.textMain, fontSize: "0.82rem" }}>Username</label>
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="e.g. john.smith"
               required
-              style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8, padding: "9px 12px", color: "#f1f5f9", fontSize: "0.9rem" }}
+              style={inputStyle}
             />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <label style={{ color: "#cbd5e1", fontSize: "0.82rem" }}>Email address</label>
+            <label style={{ color: tokens.textMain, fontSize: "0.82rem" }}>Email address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="e.g. john@company.com"
               required
-              style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8, padding: "9px 12px", color: "#f1f5f9", fontSize: "0.9rem" }}
+              style={inputStyle}
             />
           </div>
 
@@ -101,7 +108,7 @@ const InviteUserModal: React.FC<Props> = ({ onClose }) => {
               disabled={saving}
               style={{
                 flex: 1, padding: "10px 0", borderRadius: 8, border: "none",
-                background: saving ? "#164e63" : "#0369a1", color: "#fff",
+                background: saving ? tokens.accentDisabled : tokens.accent, color: tokens.textOnAccent,
                 fontSize: "0.9rem", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer",
               }}
             >
@@ -111,8 +118,8 @@ const InviteUserModal: React.FC<Props> = ({ onClose }) => {
               type="button"
               onClick={onClose}
               style={{
-                padding: "10px 18px", borderRadius: 8, border: "1px solid #334155",
-                background: "transparent", color: "#9ca3af", fontSize: "0.9rem", cursor: "pointer",
+                padding: "10px 18px", borderRadius: 8, border: `1px solid ${tokens.border2}`,
+                background: "transparent", color: tokens.textMuted, fontSize: "0.9rem", cursor: "pointer",
               }}
             >
               Close

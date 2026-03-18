@@ -527,3 +527,94 @@ body,
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ── Light theme overrides ───────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-main: #f8fafc;
+  --bg-sidebar: #e2e8f0;
+  --bg-card: #ffffff;
+  --border-subtle: #cbd5e1;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --accent: #0369a1;
+  --accent-soft: rgba(3, 105, 161, 0.1);
+  --danger: #dc2626;
+}
+
+[data-theme="light"] .chat-root {
+  background: radial-gradient(circle at top left, #e2e8f0 0, #f1f5f9 55%, #f8fafc 100%);
+}
+
+[data-theme="light"] .chat-sidebar {
+  background: #e2e8f0;
+}
+
+[data-theme="light"] .conversation-avatar {
+  background: #ffffff;
+}
+
+[data-theme="light"] .conversation-status-dot {
+  border-color: #ffffff;
+}
+
+[data-theme="light"] .conversation-item:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="light"] .conversation-unread-badge {
+  color: #ffffff;
+}
+
+[data-theme="light"] .message-avatar {
+  background: #ffffff;
+}
+
+[data-theme="light"] .message-bubble.them {
+  background: #e2e8f0;
+}
+
+[data-theme="light"] .message-bubble.me {
+  color: #ffffff;
+}
+
+[data-theme="light"] .message-bubble.me .message-time {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+[data-theme="light"] .message-input-bar {
+  background: rgba(248, 250, 252, 0.98);
+}
+
+[data-theme="light"] .message-input {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+[data-theme="light"] .message-send-button {
+  color: #ffffff;
+}
+
+[data-theme="light"] .chat-header {
+  background: linear-gradient(to right, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.9));
+}
+
+[data-theme="light"] .chat-topbar {
+  background: rgba(241, 245, 249, 0.92);
+}
+
+[data-theme="light"] .user-search-input {
+  background: #ffffff;
+  color: #1e293b;
+}
+
+[data-theme="light"] .user-search-results {
+  background: #ffffff;
+}
+
+[data-theme="light"] .user-search-item-avatar {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .user-search-item:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
