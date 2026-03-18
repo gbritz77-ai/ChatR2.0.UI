@@ -1,5 +1,6 @@
 import React from "react";
 import type { Conversation } from "../../types/chat";
+import UserAvatar from "../ui/UserAvatar";
 
 
 interface Props {
@@ -17,15 +18,12 @@ const ConversationListItem: React.FC<Props> = ({ conversation, isSelected, onCli
       onClick={onClick}
       type="button"
     >
-      <div className="conversation-avatar">
-        <span className="conversation-avatar-initials">
-          {name
-            .split(" ")
-            .map((p) => p.charAt(0))
-            .join("")
-            .slice(0, 2)
-            .toUpperCase()}
-        </span>
+      <div className="conversation-avatar" style={{ position: 'relative', flexShrink: 0 }}>
+        <UserAvatar
+          userId={type === "direct" ? conversation.otherUserId : undefined}
+          name={name}
+          size={36}
+        />
         {type === "direct" && (
           <span className={`conversation-status-dot ${isOnline ? "online" : "offline"}`} />
         )}

@@ -24,8 +24,9 @@ import {
   type ChatUserDto,
 } from "../../api/chatApi";
 import AvailabilityEditor from "../chat/AvailabilityEditor";
-import { presignDownload } from "../../api";
+import { presignDownload, getAvatarUploadUrl, confirmAvatar } from "../../api";
 import { useTheme } from "../../context/ThemeContext";
+import UserAvatar from "../ui/UserAvatar";
 import "../../styles/chat.css";
 
 const ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
@@ -73,6 +74,7 @@ const GroupMembersPanel: React.FC<{
 
 interface ChatLayoutProps {
   authToken: string;
+  currentUserId: string;
   currentUserName: string;
   onLogout: () => void;
   onInviteUser?: () => void;
@@ -95,6 +97,7 @@ const MoonIcon = () => (
 
 const ChatLayout: React.FC<ChatLayoutProps> = ({
   authToken,
+  currentUserId,
   currentUserName,
   onLogout,
   onInviteUser,
@@ -109,6 +112,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
   const { theme, tokens, toggleTheme } = useTheme();
   const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const [myAvailability, setMyAvailability] = useState<{ days: string; from: string; to: string } | null>(null);
   const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
@@ -144,6 +149,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     isOnline: dto.isGroup ? undefined : isOnlineFromLastSeen(dto.otherUserLastSeenAt),
     otherUserId: dto.otherUserId ?? undefined,
     createdByUserId: dto.createdByUserId ?? undefined,
+    otherUserHasAvatar: dto.otherUserHasAvatar ?? false,
     availability: (!dto.isGroup && dto.otherUserAvailabilityDays && dto.otherUserAvailabilityFrom && dto.otherUserAvailabilityTo)
       ? { days: dto.otherUserAvailabilityDays, from: dto.otherUserAvailabilityFrom, to: dto.otherUserAvailabilityTo }
       : null,
@@ -478,6 +484,30 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     }
   };
 
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset so the same file can be re-selected after a bust
+    e.target.value = "";
+
+    setIsUploadingAvatar(true);
+    try {
+      const { uploadUrl, key } = await getAvatarUploadUrl(file.type || "image/jpeg");
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "image/jpeg" },
+        body: file,
+      });
+      await confirmAvatar(key);
+      UserAvatar.bustCache(currentUserId);
+      // Force a re-render of our own avatar by toggling a key — simplest approach
+      setIsUploadingAvatar(false);
+    } catch (err) {
+      console.error("Avatar upload failed", err);
+      setIsUploadingAvatar(false);
+    }
+  };
+
   return (
     <div className="chat-root">
       <div className="chat-topbar" style={{
@@ -488,14 +518,35 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <span className="chat-logo">ChatR 2.0</span>
-          <button
-            type="button"
-            className="chat-topbar-user"
-            onClick={() => setShowAvailabilityEditor((v) => !v)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: tokens.textMuted }}
-          >
-            Logged in as {currentUserName} ✎
-          </button>
+          {/* Avatar — click opens file picker; pencil opens availability editor */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <UserAvatar
+              userId={currentUserId}
+              name={currentUserName}
+              size={32}
+              editable
+              onClick={() => fileInputRef.current?.click()}
+            />
+            <button
+              type="button"
+              className="chat-topbar-user"
+              onClick={() => setShowAvailabilityEditor((v) => !v)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: tokens.textMuted, fontSize: '0.85rem' }}
+              title="Edit availability"
+            >
+              {currentUserName} ✎
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleAvatarFileChange}
+            />
+            {isUploadingAvatar && (
+              <span style={{ fontSize: '0.75rem', color: tokens.textMuted }}>Uploading…</span>
+            )}
+          </div>
           {onInviteUser && (
             <button
               type="button"

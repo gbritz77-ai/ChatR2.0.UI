@@ -23,6 +23,7 @@ export function setAuthToken(token: string | null) {
 }
 
 export interface LoginResponse {
+  userId: string;
   token: string;
   expiresAt: string;
   username: string;
@@ -84,4 +85,29 @@ export interface PresignDownloadResponse {
 export async function presignDownload(payload: PresignDownloadRequest) {
   const res = await api.post<PresignDownloadResponse>("/attachments/presign-download", payload);
   return res.data;
+}
+
+// -----------------------------
+// Avatar (S3 pre-signed)
+// -----------------------------
+
+export async function getAvatarUploadUrl(contentType: string): Promise<{ uploadUrl: string; key: string }> {
+  const res = await api.get<{ uploadUrl: string; key: string }>("/Users/me/avatar-upload-url", {
+    params: { contentType },
+  });
+  return res.data;
+}
+
+export async function confirmAvatar(key: string): Promise<void> {
+  await api.post("/Users/me/avatar", { key });
+}
+
+// Returns the presigned GET URL, or null if the user has no avatar (404)
+export async function getAvatarUrl(userId: string): Promise<string | null> {
+  try {
+    const res = await api.get<{ url: string }>(`/Users/${userId}/avatar-url`);
+    return res.data.url;
+  } catch {
+    return null;
+  }
 }

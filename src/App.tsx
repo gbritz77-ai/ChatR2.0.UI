@@ -14,6 +14,7 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [token, setTokenState] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentUserName, setCurrentUserName] = useState<string>("");
   const [currentRole, setCurrentRole] = useState<string>("");
   const [mustChangePassword, setMustChangePassword] = useState(false);
@@ -30,6 +31,7 @@ export default function App() {
       const res = await login(usernameOrEmail, password);
       setAuthToken(res.token);
       setTokenState(res.token);
+      setCurrentUserId(res.userId);
       setCurrentUserName(res.username);
       setCurrentRole(res.role);
       setMustChangePassword(res.mustChangePassword);
@@ -142,6 +144,7 @@ export default function App() {
     <>
       <ChatLayout
         authToken={token}
+        currentUserId={currentUserId}
         currentUserName={currentUserName}
         onLogout={handleLogout}
         onInviteUser={currentRole === "Master" ? () => setShowInvite(true) : undefined}

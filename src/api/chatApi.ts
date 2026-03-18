@@ -15,6 +15,7 @@ export interface ChatDto {
   otherUserAvailabilityDays?: string | null;
   otherUserAvailabilityFrom?: string | null;
   otherUserAvailabilityTo?:   string | null;
+  otherUserHasAvatar?: boolean | null;
 }
 
 export interface ChatAttachmentDto {
@@ -275,7 +276,7 @@ export async function updateMyAvailability(token: string, payload: AvailabilityP
   await api.put('/Users/me/availability', payload);
 }
 
-export async function getMe(token: string): Promise<{ availabilityDays?: string; availabilityFrom?: string; availabilityTo?: string }> {
+export async function getMe(token: string): Promise<{ id?: string; availabilityDays?: string; availabilityFrom?: string; availabilityTo?: string; hasAvatar?: boolean }> {
   applyToken(token);
   const res = await api.get('/Users/me');
   return res.data;

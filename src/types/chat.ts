@@ -11,6 +11,7 @@ export interface Conversation {
   isOnline?: boolean;       // optional for 1:1
   otherUserId?: string;     // used for presence matching
   createdByUserId?: string; // used to highlight group creator
+  otherUserHasAvatar?: boolean;
   availability?: { days: string; from: string; to: string } | null;
 }
 
