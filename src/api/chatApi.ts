@@ -11,6 +11,9 @@ export interface ChatDto {
   otherUserName?: string | null;
   otherUserId?: string | null;
   otherUserLastSeenAt?: string | null; // ISO string
+  otherUserAvailabilityDays?: string | null;
+  otherUserAvailabilityFrom?: string | null;
+  otherUserAvailabilityTo?:   string | null;
 }
 
 export interface ChatAttachmentDto {
@@ -257,5 +260,22 @@ export async function getGroupMembers(chatId: string, token: string): Promise<Ch
     res.data
   );
 
+  return res.data;
+}
+
+export interface AvailabilityPayload {
+  days: string | null;
+  from: string | null;
+  to:   string | null;
+}
+
+export async function updateMyAvailability(token: string, payload: AvailabilityPayload): Promise<void> {
+  applyToken(token);
+  await api.put('/Users/me/availability', payload);
+}
+
+export async function getMe(token: string): Promise<{ availabilityDays?: string; availabilityFrom?: string; availabilityTo?: string }> {
+  applyToken(token);
+  const res = await api.get('/Users/me');
   return res.data;
 }

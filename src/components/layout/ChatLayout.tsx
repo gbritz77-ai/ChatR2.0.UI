@@ -17,10 +17,13 @@ import {
   createPrivateChat,
   createGroupChat,
   searchUsers,
+  updateMyAvailability,
+  getMe,
   type ChatDto,
   type ChatMessageDto,
   type ChatUserDto,
 } from "../../api/chatApi";
+import AvailabilityEditor from "../chat/AvailabilityEditor";
 import { presignDownload } from "../../api";
 import "../../styles/chat.css";
 
@@ -85,6 +88,9 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
   const connectionRef = useRef<signalR.HubConnection | null>(null);
 
+  const [myAvailability, setMyAvailability] = useState<{ days: string; from: string; to: string } | null>(null);
+  const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
+
   // user-search state
   const [userSearch, setUserSearch] = useState<string>("");
   const [userResults, setUserResults] = useState<ChatUserDto[]>([]);
@@ -105,6 +111,9 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     type: dto.isGroup ? "group" : "direct",
     isOnline: dto.isGroup ? undefined : isOnlineFromLastSeen(dto.otherUserLastSeenAt),
     otherUserId: dto.otherUserId ?? undefined,
+    availability: (!dto.isGroup && dto.otherUserAvailabilityDays && dto.otherUserAvailabilityFrom && dto.otherUserAvailabilityTo)
+      ? { days: dto.otherUserAvailabilityDays, from: dto.otherUserAvailabilityFrom, to: dto.otherUserAvailabilityTo }
+      : null,
   });
 
   // Map backend ChatMessageDto -> UI Message
@@ -248,6 +257,16 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     loadChats();
   }, [authToken]);
 
+  // Load my availability on mount
+  useEffect(() => {
+    if (!authToken) return;
+    getMe(authToken).then(me => {
+      if (me.availabilityDays && me.availabilityFrom && me.availabilityTo) {
+        setMyAvailability({ days: me.availabilityDays, from: me.availabilityFrom, to: me.availabilityTo });
+      }
+    }).catch(() => {});
+  }, [authToken]);
+
   // Load messages when chat selection changes
   useEffect(() => {
     if (!authToken || !selectedConversationId) return;
@@ -389,6 +408,16 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     }
   };
 
+  const handleSaveAvailability = async (days: string | null, from: string | null, to: string | null) => {
+    try {
+      await updateMyAvailability(authToken, { days, from, to });
+      setMyAvailability(days && from && to ? { days, from, to } : null);
+      setShowAvailabilityEditor(false);
+    } catch (e) {
+      console.error('Failed to save availability', e);
+    }
+  };
+
   return (
     <div className="chat-root">
       <div className="chat-topbar" style={{
@@ -398,9 +427,23 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <span className="chat-logo">ChatR 2.0</span>
-          <span className="chat-topbar-user">Logged in as {currentUserName}</span>
+          <button
+            type="button"
+            className="chat-topbar-user"
+            onClick={() => setShowAvailabilityEditor((v) => !v)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            Logged in as {currentUserName} ✎
+          </button>
           <button className="logout-button" onClick={onLogout}>Logout</button>
         </div>
+        {showAvailabilityEditor && (
+          <AvailabilityEditor
+            current={myAvailability}
+            onSave={handleSaveAvailability}
+            onClose={() => setShowAvailabilityEditor(false)}
+          />
+        )}
       </div>
 
       <div className="chat-body" style={{ marginTop: '56px' }}>

@@ -35,6 +35,11 @@ const ConversationListItem: React.FC<Props> = ({ conversation, isSelected, onCli
           <span className="conversation-name">{name}</span>
           {unreadCount > 0 && <span className="conversation-unread-badge">{unreadCount}</span>}
         </div>
+        {conversation.availability && (
+          <div style={{ fontSize: '0.68rem', color: '#9ca3af', marginTop: '2px' }}>
+            {conversation.availability.days.split(',').join(' · ')} {conversation.availability.from}–{conversation.availability.to}
+          </div>
+        )}
         <div className="conversation-row-bottom">
           <span className="conversation-preview">{lastMessagePreview}</span>
         </div>
