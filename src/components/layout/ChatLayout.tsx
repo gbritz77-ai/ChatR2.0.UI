@@ -177,7 +177,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         body: text?.trim() || '📎 Sent an attachment',
         icon: '/favicon.ico',
         tag: chatId, // collapses multiple rapid messages per chat into one
-        renotify: true,
       });
       notif.onclick = () => {
         window.focus();
