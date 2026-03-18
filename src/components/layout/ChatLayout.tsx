@@ -493,17 +493,20 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     setIsUploadingAvatar(true);
     try {
       const { uploadUrl, key } = await getAvatarUploadUrl(file.type || "image/jpeg");
-      await fetch(uploadUrl, {
+      const s3Res = await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type || "image/jpeg" },
         body: file,
       });
+      if (!s3Res.ok) {
+        throw new Error(`S3 upload failed: ${s3Res.status} ${s3Res.statusText}`);
+      }
       await confirmAvatar(key);
       UserAvatar.bustCache(currentUserId);
-      // Force a re-render of our own avatar by toggling a key — simplest approach
       setIsUploadingAvatar(false);
     } catch (err) {
       console.error("Avatar upload failed", err);
+      setError("Avatar upload failed. Check S3 CORS configuration.");
       setIsUploadingAvatar(false);
     }
   };
