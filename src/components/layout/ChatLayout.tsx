@@ -39,8 +39,9 @@ const GroupMembersPanel: React.FC<{
   chatId: string;
   token: string;
   currentUserName: string;
+  createdByUserId?: string;
   onRefresh?: () => void;
-}> = ({ chatId, token, currentUserName, onRefresh }) => {
+}> = ({ chatId, token, currentUserName, createdByUserId, onRefresh }) => {
   const [expanded, setExpanded] = useState(true);
   const [memberCount, setMemberCount] = useState<number | null>(null);
 
@@ -58,6 +59,7 @@ const GroupMembersPanel: React.FC<{
             chatId={chatId}
             token={token}
             currentUserName={currentUserName}
+            createdByUserId={createdByUserId}
             onRefresh={onRefresh}
             onMemberCount={setMemberCount}
           />
@@ -113,6 +115,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     type: dto.isGroup ? "group" : "direct",
     isOnline: dto.isGroup ? undefined : isOnlineFromLastSeen(dto.otherUserLastSeenAt),
     otherUserId: dto.otherUserId ?? undefined,
+    createdByUserId: dto.createdByUserId ?? undefined,
     availability: (!dto.isGroup && dto.otherUserAvailabilityDays && dto.otherUserAvailabilityFrom && dto.otherUserAvailabilityTo)
       ? { days: dto.otherUserAvailabilityDays, from: dto.otherUserAvailabilityFrom, to: dto.otherUserAvailabilityTo }
       : null,
@@ -522,6 +525,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                   chatId={selectedConversation.id}
                   token={authToken}
                   currentUserName={currentUserName}
+                  createdByUserId={selectedConversation.createdByUserId}
                   onRefresh={() => {
                     getChats(authToken).then((chatDtos) => setConversations(chatDtos.map(mapChatDto)));
                   }}

@@ -5,6 +5,7 @@ interface Props {
   chatId: string;
   token: string;
   currentUserName: string;
+  createdByUserId?: string;
   onRefresh?: () => void;
   onMemberCount?: (count: number) => void;
 }
@@ -13,6 +14,7 @@ const GroupMembers: React.FC<Props> = ({
   chatId,
   token,
   currentUserName,
+  createdByUserId,
   onRefresh,
   onMemberCount,
 }) => {
@@ -265,8 +267,8 @@ const GroupMembers: React.FC<Props> = ({
                 fontSize: "0.8rem",
               }}
             >
-              <span style={{ color: "#e5e7eb" }}>
-                {member.username}
+              <span style={{ color: createdByUserId && member.id === createdByUserId ? "#38bdf8" : "#e5e7eb", fontWeight: createdByUserId && member.id === createdByUserId ? 600 : 400 }}>
+                {member.username}{createdByUserId && member.id === createdByUserId ? " ★" : ""}
               </span>
               {member.username !== currentUserName && (
                 <button

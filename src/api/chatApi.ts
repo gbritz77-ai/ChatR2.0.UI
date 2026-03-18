@@ -8,6 +8,7 @@ export interface ChatDto {
   name: string | null;
   isGroup: boolean;
   unreadCount: number;
+  createdByUserId?: string | null;
   otherUserName?: string | null;
   otherUserId?: string | null;
   otherUserLastSeenAt?: string | null; // ISO string
