@@ -27,6 +27,7 @@ export interface LoginResponse {
   expiresAt: string;
   username: string;
   role: string;
+  mustChangePassword: boolean;
 }
 
 export async function login(usernameOrEmail: string, password: string) {
@@ -35,6 +36,14 @@ export async function login(usernameOrEmail: string, password: string) {
     password,
   });
   return res.data;
+}
+
+export async function changePassword(currentPassword: string, newPassword: string) {
+  await api.post("/Auth/change-password", { currentPassword, newPassword });
+}
+
+export async function inviteUser(username: string, email: string) {
+  await api.post("/Users/invite", { username, email });
 }
 
 // -----------------------------
