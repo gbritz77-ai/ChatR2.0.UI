@@ -98,74 +98,14 @@ export default function App() {
 
   // ---------- MAIN CHAT UI AFTER LOGIN ----------
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      <div
-        style={{
-          height: "40px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          padding: "0 16px",
-          background: "#020617",
-          color: "#9ca3af",
-          fontSize: "0.8rem",
-          borderBottom: "1px solid #111827",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {currentRole === "Master" && (
-            <button
-              type="button"
-              onClick={() => setShowInvite(true)}
-              style={{
-                borderRadius: "999px",
-                border: "1px solid #0369a1",
-                padding: "6px 16px",
-                background: "transparent",
-                color: "#38bdf8",
-                fontSize: "0.85rem",
-                cursor: "pointer",
-              }}
-            >
-              + Invite user
-            </button>
-          )}
-          <button
-            onClick={handleLogout}
-            style={{
-              borderRadius: "999px",
-              border: "1px solid #374151",
-              padding: "6px 16px",
-              background: "transparent",
-              color: "#e5e7eb",
-              fontSize: "0.85rem",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
-            type="button"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#38bdf8";
-              e.currentTarget.style.color = "#38bdf8";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#374151";
-              e.currentTarget.style.color = "#e5e7eb";
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      <div style={{ flex: 1 }}>
-        <ChatLayout
-          authToken={token}
-          currentUserName={currentUserName}
-          onLogout={handleLogout}
-        />
-      </div>
-
+    <>
+      <ChatLayout
+        authToken={token}
+        currentUserName={currentUserName}
+        onLogout={handleLogout}
+        onInviteUser={currentRole === "Master" ? () => setShowInvite(true) : undefined}
+      />
       {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} />}
-    </div>
+    </>
   );
 }

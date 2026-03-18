@@ -71,12 +71,14 @@ interface ChatLayoutProps {
   authToken: string;
   currentUserName: string;
   onLogout: () => void;
+  onInviteUser?: () => void;
 }
 
 const ChatLayout: React.FC<ChatLayoutProps> = ({
   authToken,
   currentUserName,
   onLogout,
+  onInviteUser,
 }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string>("");
@@ -435,6 +437,19 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
           >
             Logged in as {currentUserName} ✎
           </button>
+          {onInviteUser && (
+            <button
+              type="button"
+              onClick={onInviteUser}
+              style={{
+                borderRadius: '999px', border: '1px solid #0369a1',
+                padding: '6px 16px', background: 'transparent',
+                color: '#38bdf8', fontSize: '0.85rem', cursor: 'pointer',
+              }}
+            >
+              + Invite user
+            </button>
+          )}
           <button className="logout-button" onClick={onLogout}>Logout</button>
         </div>
         {showAvailabilityEditor && (
