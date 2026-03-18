@@ -265,6 +265,7 @@ body,
   display: flex;
   align-items: flex-end;
   gap: 8px;
+  width: 100%;
 }
 
 /* incoming (other person) → left */
