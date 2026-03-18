@@ -311,6 +311,7 @@ body,
   color: #020617;
   border-radius: 16px 4px 16px 16px;
   align-items: flex-end;
+  margin-left: auto;  /* push bubble to the right side */
 }
 
 /* Their messages – left, dark, sharp top-left corner */
