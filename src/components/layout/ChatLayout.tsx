@@ -83,6 +83,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const connectionRef = useRef<signalR.HubConnection | null>(null);
+
   // user-search state
   const [userSearch, setUserSearch] = useState<string>("");
   const [userResults, setUserResults] = useState<ChatUserDto[]>([]);
@@ -142,6 +144,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       .withAutomaticReconnect()
       .build();
 
+    connectionRef.current = connection;
+
     // New message arrives
     connection.on("ReceiveMessage", (dto: ChatMessageDto) => {
       const chatId = dto.chatId;
@@ -175,18 +179,13 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       }
     });
 
-    // Sidebar refresh hint (e.g. unread counts from server)
+    // Sidebar refresh — update preview text only; ReceiveMessage handles unread counts
     connection.on("ChatUpdated", (data: { chatId: string; lastMessagePreview?: string }) => {
-      // Only increment unread if the chat is not currently open
-      if (data.chatId !== selectedConversationIdRef.current) {
+      if (data.lastMessagePreview) {
         setConversations((prev) =>
           prev.map((c) =>
             c.id === data.chatId
-              ? {
-                  ...c,
-                  unreadCount: c.unreadCount + 1,
-                  lastMessagePreview: data.lastMessagePreview ?? c.lastMessagePreview,
-                }
+              ? { ...c, lastMessagePreview: data.lastMessagePreview ?? c.lastMessagePreview }
               : c
           )
         );
@@ -207,6 +206,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       .catch((err) => console.error("[SignalR] Connection error", err));
 
     return () => {
+      connectionRef.current = null;
       connection.stop();
     };
   }, [authToken]);
@@ -225,6 +225,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         const uiConversations = dtos.map(mapChatDto);
 
         setConversations(uiConversations);
+
+        // Join all chat groups so ReceiveMessage is delivered for every chat
+        const conn = connectionRef.current;
+        if (conn?.state === signalR.HubConnectionState.Connected) {
+          for (const dto of dtos) {
+            conn.invoke("JoinChat", dto.chatId).catch(() => {});
+          }
+        }
 
         if (uiConversations.length > 0) {
           setSelectedConversationId((prev) => prev || uiConversations[0].id);
@@ -276,6 +284,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
     );
+    const conn = connectionRef.current;
+    if (conn?.state === signalR.HubConnectionState.Connected) {
+      conn.invoke("JoinChat", id).catch(() => {});
+    }
   };
 
   // User search
@@ -344,6 +356,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       const dto = await createPrivateChat(user.id, authToken);
       const chatDtos = await getChats(authToken);
       setConversations(chatDtos.map(mapChatDto));
+      const conn = connectionRef.current;
+      if (conn?.state === signalR.HubConnectionState.Connected) {
+        for (const c of chatDtos) conn.invoke("JoinChat", c.chatId).catch(() => {});
+      }
       handleSelectConversation(dto.id);
       setUserSearch("");
       setUserResults([]);
@@ -360,6 +376,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       const dto = await createGroupChat(groupName, memberIds, authToken);
       const chatDtos = await getChats(authToken);
       setConversations(chatDtos.map(mapChatDto));
+      const conn = connectionRef.current;
+      if (conn?.state === signalR.HubConnectionState.Connected) {
+        for (const c of chatDtos) conn.invoke("JoinChat", c.chatId).catch(() => {});
+      }
       handleSelectConversation(dto.id);
     } catch (err: unknown) {
       console.error("Error creating group chat", err);
