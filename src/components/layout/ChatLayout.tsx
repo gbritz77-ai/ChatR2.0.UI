@@ -104,6 +104,16 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const selectedConversationIdRef = useRef(selectedConversationId);
   useEffect(() => { selectedConversationIdRef.current = selectedConversationId; }, [selectedConversationId]);
 
+  // Ref to latest handleSelectConversation so notification onclick can use it without stale closure
+  const selectConversationRef = useRef<(id: string) => void>(() => {});
+
+  // Request desktop notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   const meLower = currentUserName.toLowerCase();
 
   // Map backend ChatDto -> UI Conversation
@@ -160,6 +170,22 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
     connectionRef.current = connection;
 
+    // Helper: fire a desktop notification for a message from someone else
+    const fireNotification = (chatId: string, senderName: string, text: string | undefined) => {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const notif = new Notification(senderName, {
+        body: text?.trim() || '📎 Sent an attachment',
+        icon: '/favicon.ico',
+        tag: chatId, // collapses multiple rapid messages per chat into one
+        renotify: true,
+      });
+      notif.onclick = () => {
+        window.focus();
+        selectConversationRef.current(chatId);
+        notif.close();
+      };
+    };
+
     // New message arrives
     connection.on("ReceiveMessage", (dto: ChatMessageDto) => {
       const chatId = dto.chatId;
@@ -170,6 +196,11 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         // Skip own messages in the active chat — the optimistic update + API response handles them.
         // Adding here too causes a duplicate when SignalR fires before the POST response returns.
         if (isMyMessage) return;
+
+        // Notify if the window is not focused (user has switched to another app/tab)
+        if (!document.hasFocus()) {
+          fireNotification(chatId, senderName, dto.text);
+        }
 
         setMessages((prev) => {
           if (prev.some((m) => m.id === dto.id)) return prev;
@@ -193,6 +224,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               c.id === chatId ? { ...c, unreadCount: c.unreadCount + 1 } : c
             )
           );
+          // Always notify for messages in background chats
+          fireNotification(chatId, senderName, dto.text);
         }
       }
     });
@@ -317,6 +350,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       conn.invoke("JoinChat", id).catch(() => {});
     }
   };
+  selectConversationRef.current = handleSelectConversation;
 
   // User search
   useEffect(() => {
