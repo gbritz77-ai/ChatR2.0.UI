@@ -160,11 +160,16 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     // New message arrives
     connection.on("ReceiveMessage", (dto: ChatMessageDto) => {
       const chatId = dto.chatId;
+      const senderName = dto.senderUserName ?? dto.senderId;
+      const isMyMessage = senderName.toLowerCase() === meLower;
+
       if (chatId === selectedConversationIdRef.current) {
-        // Add to visible message list (only if not already there from optimistic update)
+        // Skip own messages in the active chat — the optimistic update + API response handles them.
+        // Adding here too causes a duplicate when SignalR fires before the POST response returns.
+        if (isMyMessage) return;
+
         setMessages((prev) => {
           if (prev.some((m) => m.id === dto.id)) return prev;
-          const senderName = dto.senderUserName ?? dto.senderId;
           return [...prev, {
             id: dto.id,
             conversationId: dto.chatId,
@@ -172,15 +177,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
             senderName,
             text: dto.text ?? "",
             createdAt: dto.createdAt,
-            isMe: senderName.toLowerCase() === meLower,
+            isMe: false,
             gifUrl: dto.gifUrl,
             attachments: dto.attachments?.map((a) => ({ id: a.id, fileName: a.fileName, contentType: a.contentType })),
           }];
         });
       } else {
         // Increment unread for background chat (only messages from others)
-        const senderName = (dto.senderUserName ?? dto.senderId).toLowerCase();
-        if (senderName !== meLower) {
+        if (!isMyMessage) {
           setConversations((prev) =>
             prev.map((c) =>
               c.id === chatId ? { ...c, unreadCount: c.unreadCount + 1 } : c
