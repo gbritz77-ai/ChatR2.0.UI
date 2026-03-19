@@ -114,6 +114,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const connectionRef = useRef<signalR.HubConnection | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState(0);
 
   const [myAvailability, setMyAvailability] = useState<{ days: string; from: string; to: string } | null>(null);
   const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
@@ -503,6 +504,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       }
       await confirmAvatar(key);
       UserAvatar.bustCache(currentUserId);
+      setAvatarVersion(v => v + 1);
       setIsUploadingAvatar(false);
     } catch (err) {
       console.error("Avatar upload failed", err);
@@ -524,6 +526,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
           {/* Avatar — click opens file picker; pencil opens availability editor */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <UserAvatar
+              key={avatarVersion}
               userId={currentUserId}
               name={currentUserName}
               size={32}
