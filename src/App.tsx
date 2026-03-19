@@ -20,12 +20,14 @@ export default function App() {
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   console.log("VITE_API_BASE =", import.meta.env.VITE_API_BASE);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsLoggingIn(true);
 
     try {
       const res = await login(usernameOrEmail, password);
@@ -38,6 +40,8 @@ export default function App() {
     } catch (err) {
       console.error(err);
       setError("Invalid login");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -121,8 +125,13 @@ export default function App() {
               </div>
             </div>
 
-            <button className="auth-btn" type="submit">
-              Login
+            <button className="auth-btn" type="submit" disabled={isLoggingIn} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              {isLoggingIn && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: "spin 0.8s linear infinite", flexShrink: 0 }}>
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+              )}
+              {isLoggingIn ? "Signing in…" : "Login"}
             </button>
           </form>
         </div>
