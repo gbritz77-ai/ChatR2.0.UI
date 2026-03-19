@@ -68,7 +68,7 @@ const InviteUserModal: React.FC<Props> = ({ onClose }) => {
         </div>
 
         <p style={{ color: tokens.textMuted, fontSize: "0.82rem", marginBottom: 20 }}>
-          The user will receive an email with the app URL and a temporary password (<strong style={{ color: tokens.textMain }}>ImpTrack@2020</strong>). They will be prompted to change it on first login.
+          The user will receive an email with the app URL and a temporary password (<strong style={{ color: tokens.textMain }}>Outsec@2026</strong>). They will be prompted to change it on first login.
         </p>
 
         {error && (
