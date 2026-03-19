@@ -31,8 +31,12 @@ const InviteUserModal: React.FC<Props> = ({ onClose }) => {
 
     try {
       setSaving(true);
-      await inviteUser(username.trim(), email.trim());
-      setSuccess(`Invitation sent to ${email.trim()}`);
+      const res = await inviteUser(username.trim(), email.trim());
+      if (res.message.includes("could not be sent")) {
+        setError(res.message);
+      } else {
+        setSuccess(res.message);
+      }
       setUsername("");
       setEmail("");
     } catch (err: unknown) {
