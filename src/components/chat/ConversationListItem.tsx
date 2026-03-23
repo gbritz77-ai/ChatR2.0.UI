@@ -19,11 +19,19 @@ const ConversationListItem: React.FC<Props> = ({ conversation, isSelected, onCli
       type="button"
     >
       <div className="conversation-avatar" style={{ position: 'relative', flexShrink: 0 }}>
-        <UserAvatar
-          userId={type === "direct" ? conversation.otherUserId : undefined}
-          name={name}
-          size={36}
-        />
+        {type === "group" && conversation.chatAvatarUrl ? (
+          <img
+            src={conversation.chatAvatarUrl}
+            alt={name}
+            style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }}
+          />
+        ) : (
+          <UserAvatar
+            userId={type === "direct" ? conversation.otherUserId : undefined}
+            name={name}
+            size={36}
+          />
+        )}
         {type === "direct" && (
           <span className={`conversation-status-dot ${isOnline ? "online" : "offline"}`} />
         )}

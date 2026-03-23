@@ -9,6 +9,13 @@ const ChatHeader: React.FC<Props> = ({ conversation }) => {
   return (
     <header className="chat-header">
       <div className="chat-header-main">
+        {conversation.type === "group" && conversation.chatAvatarUrl && (
+          <img
+            src={conversation.chatAvatarUrl}
+            alt={conversation.name}
+            style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", marginRight: 10, flexShrink: 0 }}
+          />
+        )}
         <h2>{conversation.name}</h2>
         {conversation.type === "direct" && (
           <div className="chat-header-status">

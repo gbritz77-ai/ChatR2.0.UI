@@ -13,6 +13,7 @@ export interface Conversation {
   createdByUserId?: string; // used to highlight group creator
   otherUserHasAvatar?: boolean;
   otherUserGroup?: string | null;
+  chatAvatarUrl?: string | null;
   availability?: { days: string; from: string; to: string } | null;
 }
 

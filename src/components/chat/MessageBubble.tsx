@@ -65,6 +65,7 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
   const [editText, setEditText] = useState(message.text);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -185,11 +186,7 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
                 <button
                   type="button"
                   disabled={isDeleting}
-                  onClick={async () => {
-                    if (!window.confirm("Delete this message?")) return;
-                    setIsDeleting(true);
-                    try { await onDelete(message.id); } finally { setIsDeleting(false); }
-                  }}
+                  onClick={() => setShowDeleteConfirm(true)}
                   title="Delete message"
                   style={{
                     background: "none", border: "none", cursor: isDeleting ? "not-allowed" : "pointer",
@@ -217,6 +214,51 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
               onDownload={onDownloadAttachment}
             />
           ))}
+        </div>
+      )}
+      {showDeleteConfirm && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999,
+        }}>
+          <div style={{
+            background: "#1e293b", borderRadius: 12, padding: "24px 28px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)", maxWidth: 320, width: "90%",
+            display: "flex", flexDirection: "column", gap: 16,
+          }}>
+            <div style={{ fontWeight: 600, fontSize: "1rem", color: "#e5e7eb" }}>Delete message</div>
+            <div style={{ fontSize: "0.875rem", color: "#9ca3af" }}>
+              This message will be permanently deleted for everyone in the chat.
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{
+                  padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)",
+                  background: "transparent", color: "#9ca3af", fontSize: "0.875rem", cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  setIsDeleting(true);
+                  setShowDeleteConfirm(false);
+                  try { await onDelete!(message.id); } finally { setIsDeleting(false); }
+                }}
+                style={{
+                  padding: "8px 18px", borderRadius: 8, border: "none",
+                  background: "#ef4444", color: "#fff", fontSize: "0.875rem",
+                  fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                {isDeleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
       <span className="message-time">

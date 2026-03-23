@@ -16,6 +16,7 @@ import {
   markChatRead,
   createPrivateChat,
   createGroupChat,
+  getGroupAvatarUploadUrl,
   getUsers,
   updateMyAvailability,
   getMe,
@@ -157,6 +158,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     createdByUserId: dto.createdByUserId ?? undefined,
     otherUserHasAvatar: dto.otherUserHasAvatar ?? false,
     otherUserGroup: dto.otherUserGroup ?? null,
+    chatAvatarUrl: dto.chatAvatarUrl ?? null,
     availability: (!dto.isGroup && dto.otherUserAvailabilityDays && dto.otherUserAvailabilityFrom && dto.otherUserAvailabilityTo)
       ? { days: dto.otherUserAvailabilityDays, from: dto.otherUserAvailabilityFrom, to: dto.otherUserAvailabilityTo }
       : null,
@@ -488,11 +490,11 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     }
   };
 
-  const handleCreateGroup = async (groupName: string, memberIds: string[]) => {
+  const handleCreateGroup = async (groupName: string, memberIds: string[], avatarKey?: string) => {
     try {
       setError(null);
       setIsCreatingGroup(true);
-      const dto = await createGroupChat(groupName, memberIds, authToken);
+      const dto = await createGroupChat(groupName, memberIds, authToken, avatarKey);
       const chatDtos = await getChats(authToken);
       setConversations(chatDtos.map(mapChatDto));
       const conn = connectionRef.current;

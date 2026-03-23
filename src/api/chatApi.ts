@@ -17,6 +17,7 @@ export interface ChatDto {
   otherUserAvailabilityTo?:   string | null;
   otherUserHasAvatar?: boolean | null;
   otherUserGroup?: string | null;
+  chatAvatarUrl?: string | null;
 }
 
 export interface ChatAttachmentDto {
@@ -188,14 +189,21 @@ export async function createPrivateChat(
   return res.data;
 }
 
+export async function getGroupAvatarUploadUrl(token: string, contentType = "image/jpeg"): Promise<{ uploadUrl: string; key: string }> {
+  applyToken(token);
+  const res = await api.get<{ uploadUrl: string; key: string }>("/Chats/group-avatar-upload-url", { params: { contentType } });
+  return res.data;
+}
+
 export async function createGroupChat(
   groupName: string,
   memberIds: string[],
-  token: string
+  token: string,
+  avatarKey?: string
 ): Promise<GroupChatDto> {
   applyToken(token);
 
-  const payload = { name: groupName, memberIds };
+  const payload = { name: groupName, memberIds, avatarKey: avatarKey ?? null };
   console.log("[chatApi] POST /Chats/group payload:", payload);
 
   const res = await api.post<GroupChatDto>("/Chats/group", payload);
