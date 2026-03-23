@@ -137,10 +137,60 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   // Ref to latest handleSelectConversation so notification onclick can use it without stale closure
   const selectConversationRef = useRef<(id: string) => void>(() => {});
 
-  // Update browser tab title with total unread count
+  // Update browser tab title + favicon badge with total unread count
   useEffect(() => {
     const total = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
     document.title = total > 0 ? `(${total}) ChatR` : "ChatR";
+
+    // Update favicon with red dot badge when there are unread messages
+    const canvas = document.createElement("canvas");
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.src = "/logo.jpeg";
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, 32, 32);
+      if (total > 0) {
+        // Red dot badge in top-right corner
+        ctx.beginPath();
+        ctx.arc(24, 8, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = "#ef4444";
+        ctx.fill();
+        // Count text inside dot
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 9px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(total > 9 ? "9+" : String(total), 24, 8);
+      }
+      let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = canvas.toDataURL("image/png");
+    };
+    img.onerror = () => {
+      // Fallback: plain red circle favicon when logo fails to load
+      if (total > 0) {
+        ctx.beginPath();
+        ctx.arc(16, 16, 14, 0, 2 * Math.PI);
+        ctx.fillStyle = "#ef4444";
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 14px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(total > 9 ? "9+" : String(total), 16, 16);
+        let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+        if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
+        link.href = canvas.toDataURL("image/png");
+      }
+    };
   }, [conversations]);
 
   // Initialise AudioContext on first user interaction (browser autoplay policy)
