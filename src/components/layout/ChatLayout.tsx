@@ -20,6 +20,7 @@ import {
   updateMyAvailability,
   getMe,
   editMessage,
+  deleteMessage,
   type ChatDto,
   type ChatMessageDto,
   type ChatUserDto,
@@ -289,6 +290,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       );
     });
 
+    connection.on("MessageDeleted", (data: { messageId: string }) => {
+      setMessages((prev) => prev.filter((m) => m.id !== data.messageId));
+    });
+
     // Handle new chat created by another user
     connection.on("NewChatCreated", async () => {
       const chatDtos = await getChats(authToken);
@@ -511,6 +516,12 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     );
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!selectedConversationId) return;
+    await deleteMessage(selectedConversationId, messageId, authToken);
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+  };
+
   const handleSaveAvailability = async (days: string | null, from: string | null, to: string | null) => {
     try {
       await updateMyAvailability(authToken, { days, from, to });
@@ -688,7 +699,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                 />
               )}
 
-              <MessageList messages={messages} onDownloadAttachment={handleGetAttachmentUrl} onEditMessage={handleEditMessage} />
+              <MessageList messages={messages} onDownloadAttachment={handleGetAttachmentUrl} onEditMessage={handleEditMessage} onDeleteMessage={handleDeleteMessage} />
               <MessageInput chatId={selectedConversationId} onSend={handleSendMessage} />
 
               {isLoadingMessages && messages.length === 0 && (

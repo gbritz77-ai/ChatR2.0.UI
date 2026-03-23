@@ -7,6 +7,7 @@ interface Props {
   message: Message;
   onDownloadAttachment: (attachmentId: string, chatId: string) => Promise<string>;
   onEdit?: (messageId: string, newText: string) => Promise<void>;
+  onDelete?: (messageId: string) => Promise<void>;
 }
 
 const AttachmentItem: React.FC<{
@@ -59,10 +60,11 @@ const AttachmentItem: React.FC<{
   );
 };
 
-const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit }) => {
+const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.text);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -177,6 +179,27 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit 
                   onMouseLeave={e => (e.currentTarget.style.opacity = "0.4")}
                 >
                   ✎
+                </button>
+              )}
+              {message.isMe && onDelete && (
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    if (!window.confirm("Delete this message?")) return;
+                    setIsDeleting(true);
+                    try { await onDelete(message.id); } finally { setIsDeleting(false); }
+                  }}
+                  title="Delete message"
+                  style={{
+                    background: "none", border: "none", cursor: isDeleting ? "not-allowed" : "pointer",
+                    color: "inherit", opacity: 0.4, padding: "0 2px", flexShrink: 0,
+                    fontSize: "0.7rem", lineHeight: 1,
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = "0.4")}
+                >
+                  🗑
                 </button>
               )}
             </div>

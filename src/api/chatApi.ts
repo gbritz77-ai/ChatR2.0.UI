@@ -288,3 +288,8 @@ export async function editMessage(chatId: string, messageId: string, text: strin
   applyToken(token);
   await api.put(`/Chats/${chatId}/messages/${messageId}`, { text });
 }
+
+export async function deleteMessage(chatId: string, messageId: string, token: string): Promise<void> {
+  applyToken(token);
+  await api.delete(`/Chats/${chatId}/messages/${messageId}`);
+}

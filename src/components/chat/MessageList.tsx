@@ -8,9 +8,10 @@ interface Props {
   messages: Message[];
   onDownloadAttachment: (attachmentId: string, chatId: string) => Promise<string>;
   onEditMessage?: (messageId: string, newText: string) => Promise<void>;
+  onDeleteMessage?: (messageId: string) => Promise<void>;
 }
 
-const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMessage }) => {
+const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMessage, onDeleteMessage }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -27,7 +28,7 @@ const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMe
           key={m.id}
           className={`message-row ${m.isMe ? "me" : "them"}`}
         >
-          <MessageBubble message={m} onDownloadAttachment={onDownloadAttachment} onEdit={onEditMessage} />
+          <MessageBubble message={m} onDownloadAttachment={onDownloadAttachment} onEdit={onEditMessage} onDelete={onDeleteMessage} />
         </div>
       ))}
     </div>
