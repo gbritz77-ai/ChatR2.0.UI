@@ -122,7 +122,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
   // user-search state
   const [userSearch, setUserSearch] = useState<string>("");
-  const [userGroupFilter, setUserGroupFilter] = useState<string>("");
   const [allUsers, setAllUsers] = useState<ChatUserDto[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
@@ -422,7 +421,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         setIsLoadingUsers(true);
         const results = await getUsers(authToken, {
           search: userSearch.trim() || undefined,
-          group: userGroupFilter || undefined,
         });
         setAllUsers(results);
       } catch (err: unknown) {
@@ -432,7 +430,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       }
     }, userSearch.trim() ? 300 : 0);
     return () => window.clearTimeout(handle);
-  }, [userSearch, userGroupFilter, authToken]);
+  }, [userSearch, authToken]);
 
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
 
