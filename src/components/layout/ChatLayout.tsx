@@ -136,10 +136,21 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   // Ref to latest handleSelectConversation so notification onclick can use it without stale closure
   const selectConversationRef = useRef<(id: string) => void>(() => {});
 
-  // Request desktop notification permission on mount
+  // Notification permission state
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(
+    () => ('Notification' in window ? Notification.permission : null)
+  );
+
+  const requestNotifPermission = async () => {
+    if (!('Notification' in window)) return;
+    const result = await Notification.requestPermission();
+    setNotifPermission(result);
+  };
+
+  // Auto-request on mount if not yet decided
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+      void requestNotifPermission();
     }
   }, []);
 
@@ -636,7 +647,36 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         )}
       </div>
 
-      <div className="chat-body" style={{ marginTop: '56px' }}>
+      {notifPermission !== 'granted' && notifPermission !== null && (
+        <div style={{
+          position: 'fixed', top: '56px', left: 0, right: 0, zIndex: 999,
+          background: notifPermission === 'denied' ? 'rgba(239,68,68,0.12)' : 'rgba(56,189,248,0.1)',
+          borderBottom: `1px solid ${notifPermission === 'denied' ? 'rgba(239,68,68,0.3)' : 'rgba(56,189,248,0.2)'}`,
+          padding: '8px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          fontSize: '0.8rem', color: tokens.textMain,
+        }}>
+          <span>
+            {notifPermission === 'denied'
+              ? '🔕 Notifications are blocked. To enable: click the lock icon in your browser address bar → Notifications → Allow.'
+              : '🔔 Enable desktop notifications to be alerted when new messages arrive.'}
+          </span>
+          {notifPermission !== 'denied' && (
+            <button
+              type="button"
+              onClick={() => void requestNotifPermission()}
+              style={{
+                flexShrink: 0, padding: '4px 14px', borderRadius: 6, border: 'none',
+                background: tokens.accent, color: tokens.textOnAccent,
+                fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              Enable
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="chat-body" style={{ marginTop: notifPermission !== 'granted' && notifPermission !== null ? '92px' : '56px' }}>
         <aside className="chat-sidebar">
           <div className="chat-sidebar-header" />
 
