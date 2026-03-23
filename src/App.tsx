@@ -62,7 +62,7 @@ export default function App() {
         <div className="auth-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div className="auth-header">
-              <h2>ChatR2.0</h2>
+              <img src="/logo.jpeg" alt="ChatR" style={{ height: 48, marginBottom: 8, borderRadius: 8 }} />
               <p>Sign in to continue.</p>
             </div>
             <button

@@ -128,6 +128,9 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const selectedConversationIdRef = useRef(selectedConversationId);
   useEffect(() => { selectedConversationIdRef.current = selectedConversationId; }, [selectedConversationId]);
 
+  const conversationsRef = useRef<Conversation[]>([]);
+  useEffect(() => { conversationsRef.current = conversations; }, [conversations]);
+
   // Ref to latest handleSelectConversation so notification onclick can use it without stale closure
   const selectConversationRef = useRef<(id: string) => void>(() => {});
 
@@ -276,8 +279,24 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       );
     });
 
+    // Handle new chat created by another user
+    connection.on("NewChatCreated", async () => {
+      const chatDtos = await getChats(authToken);
+      const uiConversations = chatDtos.map(mapChatDto);
+      setConversations(uiConversations);
+      for (const dto of chatDtos) {
+        connection.invoke("JoinChat", dto.chatId).catch(() => {});
+      }
+    });
+
     connection.start()
-      .then(() => console.log("[SignalR] Connected"))
+      .then(() => {
+        console.log("[SignalR] Connected");
+        // Fix race condition: join all chats that loaded before SignalR connected
+        for (const c of conversationsRef.current) {
+          connection.invoke("JoinChat", c.id).catch(() => {});
+        }
+      })
       .catch((err) => console.error("[SignalR] Connection error", err));
 
     return () => {
@@ -522,7 +541,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         borderBottom: `1px solid ${tokens.border}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <span className="chat-logo">ChatR 2.0</span>
+          <img src="/logo.jpeg" alt="ChatR" style={{ height: 32, borderRadius: 6 }} />
           {/* Avatar — click opens file picker; pencil opens availability editor */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <UserAvatar
