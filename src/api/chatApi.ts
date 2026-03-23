@@ -51,6 +51,7 @@ export interface ChatUserDto {
   username: string;
   email: string | null;
   role: string;
+  group: string | null;
 }
 
 export interface GroupChatDto {
@@ -152,17 +153,17 @@ export async function markChatRead(chatId: string, token: string): Promise<void>
   }
 }
 
-export async function searchUsers(token: string, search: string): Promise<ChatUserDto[]> {
+export async function getUsers(token: string, params?: { search?: string; group?: string }): Promise<ChatUserDto[]> {
   applyToken(token);
-
-  const trimmed = search.trim();
-
-  const res = await api.get<ChatUserDto[]>("/Users", {
-    params: trimmed ? { search: trimmed } : undefined,
-  });
-
-  console.log("[chatApi] GET /Users status:", res.status, "data:", res.data);
+  const query: Record<string, string> = {};
+  if (params?.search?.trim()) query.search = params.search.trim();
+  if (params?.group?.trim()) query.group = params.group.trim();
+  const res = await api.get<ChatUserDto[]>("/Users", { params: Object.keys(query).length ? query : undefined });
   return res.data;
+}
+
+export async function searchUsers(token: string, search: string): Promise<ChatUserDto[]> {
+  return getUsers(token, { search });
 }
 
 export async function createPrivateChat(

@@ -10,9 +10,12 @@ const InviteUserModal: React.FC<Props> = ({ onClose }) => {
   const { tokens } = useTheme();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [group, setGroup] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const GROUPS = ["Medical", "Property", "Legal", "Media", "Client", "Crystal Clara"];
 
   const inputStyle: React.CSSProperties = {
     background: tokens.bgInput, border: `1px solid ${tokens.border2}`, borderRadius: 8,
@@ -31,7 +34,7 @@ const InviteUserModal: React.FC<Props> = ({ onClose }) => {
 
     try {
       setSaving(true);
-      const res = await inviteUser(username.trim(), email.trim());
+      const res = await inviteUser(username.trim(), email.trim(), group || undefined);
       if (res.message.includes("could not be sent")) {
         setError(res.message);
       } else {
@@ -39,6 +42,7 @@ const InviteUserModal: React.FC<Props> = ({ onClose }) => {
       }
       setUsername("");
       setEmail("");
+      setGroup("");
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? "Failed to send invitation.");
@@ -104,6 +108,20 @@ const InviteUserModal: React.FC<Props> = ({ onClose }) => {
               required
               style={inputStyle}
             />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <label style={{ color: tokens.textMain, fontSize: "0.82rem" }}>Group</label>
+            <select
+              value={group}
+              onChange={(e) => setGroup(e.target.value)}
+              style={{ ...inputStyle, cursor: "pointer" }}
+            >
+              <option value="">— Select a group —</option>
+              {GROUPS.map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
           </div>
 
           <div style={{ display: "flex", gap: 10, marginTop: 4 }}>

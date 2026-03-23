@@ -16,7 +16,7 @@ import {
   markChatRead,
   createPrivateChat,
   createGroupChat,
-  searchUsers,
+  getUsers,
   updateMyAvailability,
   getMe,
   editMessage,
@@ -122,8 +122,9 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
   // user-search state
   const [userSearch, setUserSearch] = useState<string>("");
-  const [userResults, setUserResults] = useState<ChatUserDto[]>([]);
-  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [userGroupFilter, setUserGroupFilter] = useState<string>("");
+  const [allUsers, setAllUsers] = useState<ChatUserDto[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
   // Refs to avoid stale closures in SignalR event handlers
   const selectedConversationIdRef = useRef(selectedConversationId);
@@ -412,32 +413,25 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   };
   selectConversationRef.current = handleSelectConversation;
 
-  // User search
+  // Load users for "Start private chat" panel
   useEffect(() => {
     if (!authToken) return;
-
-    const trimmed = userSearch.trim();
-
-    if (!trimmed) {
-      setUserResults([]);
-      setIsSearchingUsers(false);
-      return;
-    }
-
     const handle = window.setTimeout(async () => {
       try {
-        setIsSearchingUsers(true);
-        const results = await searchUsers(authToken, trimmed);
-        setUserResults(results);
+        setIsLoadingUsers(true);
+        const results = await getUsers(authToken, {
+          search: userSearch.trim() || undefined,
+          group: userGroupFilter || undefined,
+        });
+        setAllUsers(results);
       } catch (err: unknown) {
-        console.error("Error searching users", err);
+        console.error("Error loading users", err);
       } finally {
-        setIsSearchingUsers(false);
+        setIsLoadingUsers(false);
       }
-    }, 300);
-
+    }, userSearch.trim() ? 300 : 0);
     return () => window.clearTimeout(handle);
-  }, [userSearch, authToken]);
+  }, [userSearch, userGroupFilter, authToken]);
 
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
 
@@ -484,7 +478,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       }
       handleSelectConversation(dto.id);
       setUserSearch("");
-      setUserResults([]);
     } catch (err: unknown) {
       console.error("Error creating private chat", err);
       setError("Failed to create private chat.");
@@ -640,30 +633,67 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
           <div className="user-search-container">
             <div className="user-search-label">Start private chat</div>
+            <select
+              value={userGroupFilter}
+              onChange={(e) => setUserGroupFilter(e.target.value)}
+              style={{
+                width: "100%", marginBottom: 6, padding: "7px 10px", borderRadius: 8,
+                border: `1px solid ${tokens.border2}`, background: tokens.bgInput,
+                color: tokens.textMain, fontSize: "0.82rem", cursor: "pointer",
+              }}
+            >
+              <option value="">All groups</option>
+              {["Medical", "Property", "Legal", "Media", "Client", "Crystal Clara"].map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
             <input
               className="user-search-input"
               type="text"
-              placeholder="Search users by name or email"
+              placeholder="Search by name or email…"
               value={userSearch}
               onChange={(e) => setUserSearch(e.target.value)}
             />
-            {userSearch.trim() && isSearchingUsers && <div className="user-search-hint">Searching…</div>}
-            {userSearch.trim() && !isSearchingUsers && userResults.length === 0 && (
+            {isLoadingUsers && <div className="user-search-hint">Loading…</div>}
+            {!isLoadingUsers && allUsers.length === 0 && (
               <div className="user-search-hint">No users found</div>
             )}
-            {userSearch.trim() && userResults.length > 0 && (
-              <div className="user-search-results">
-                {userResults.map((u) => (
-                  <button key={u.id} type="button" className="user-search-item" onClick={() => handleStartPrivateChat(u)}>
-                    <div className="user-search-item-avatar">{u.username.charAt(0).toUpperCase()}</div>
-                    <div className="user-search-item-text">
-                      <div className="user-search-item-name">{u.username}</div>
-                      {u.email && <div className="user-search-item-email">{u.email}</div>}
+            {!isLoadingUsers && allUsers.length > 0 && (() => {
+              // Group users by their group field
+              const grouped: Record<string, ChatUserDto[]> = {};
+              for (const u of allUsers) {
+                const g = u.group ?? "No group";
+                if (!grouped[g]) grouped[g] = [];
+                grouped[g].push(u);
+              }
+              const showGroupHeadings = Object.keys(grouped).length > 1 || !userGroupFilter;
+              return (
+                <div className="user-search-results">
+                  {Object.entries(grouped).map(([groupName, members]) => (
+                    <div key={groupName}>
+                      {showGroupHeadings && (
+                        <div style={{
+                          fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em",
+                          textTransform: "uppercase", color: tokens.accent,
+                          padding: "8px 10px 4px", opacity: 0.85,
+                        }}>
+                          {groupName}
+                        </div>
+                      )}
+                      {members.map((u) => (
+                        <button key={u.id} type="button" className="user-search-item" onClick={() => handleStartPrivateChat(u)}>
+                          <div className="user-search-item-avatar">{u.username.charAt(0).toUpperCase()}</div>
+                          <div className="user-search-item-text">
+                            <div className="user-search-item-name">{u.username}</div>
+                            {u.email && <div className="user-search-item-email">{u.email}</div>}
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </button>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {isLoadingConversations && conversations.length === 0 ? (

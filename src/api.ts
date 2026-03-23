@@ -43,8 +43,8 @@ export async function changePassword(currentPassword: string, newPassword: strin
   await api.post("/Auth/change-password", { currentPassword, newPassword });
 }
 
-export async function inviteUser(username: string, email: string): Promise<{ message: string }> {
-  const res = await api.post<{ message: string }>("/Users/invite", { username, email });
+export async function inviteUser(username: string, email: string, group?: string): Promise<{ message: string }> {
+  const res = await api.post<{ message: string }>("/Users/invite", { username, email, group: group || null });
   return res.data;
 }
 
