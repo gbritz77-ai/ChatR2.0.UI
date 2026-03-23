@@ -298,6 +298,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       }
     });
 
+    // Re-join all groups after automatic reconnection (server drops group membership on disconnect)
+    connection.onreconnected(() => {
+      console.log("[SignalR] Reconnected — rejoining chat groups");
+      for (const c of conversationsRef.current) {
+        connection.invoke("JoinChat", c.id).catch(() => {});
+      }
+    });
+
     connection.start()
       .then(() => {
         console.log("[SignalR] Connected");

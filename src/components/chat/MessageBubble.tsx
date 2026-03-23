@@ -201,7 +201,11 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit 
           hour: "2-digit",
           minute: "2-digit",
         })}
-        {message.isEdited && <span style={{ marginLeft: 4, opacity: 0.55, fontSize: "0.7em" }}>(edited)</span>}
+        {message.isEdited && (
+          <span style={{ marginLeft: 6, fontSize: "0.68em", opacity: 0.65, fontStyle: "italic", letterSpacing: "0.01em" }}>
+            ✎ edited
+          </span>
+        )}
       </span>
     </div>
   );
