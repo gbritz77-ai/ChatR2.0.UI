@@ -273,9 +273,9 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         // Adding here too causes a duplicate when SignalR fires before the POST response returns.
         if (isMyMessage) return;
 
-        // Sound + desktop notification if window is not focused
+        // Always play sound for messages from others; desktop notification only when window not focused
+        playNotificationSound();
         if (!document.hasFocus()) {
-          playNotificationSound();
           fireNotification(chatId, senderName, dto.text);
         }
 
