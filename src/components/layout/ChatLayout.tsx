@@ -97,6 +97,12 @@ const MoonIcon = () => (
   </svg>
 );
 
+const HamburgerIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+);
+
 const ChatLayout: React.FC<ChatLayoutProps> = ({
   authToken,
   currentUserId,
@@ -121,6 +127,20 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
   const [myAvailability, setMyAvailability] = useState<{ days: string; from: string; to: string } | null>(null);
   const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
+
+  // Mobile responsive state
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    const handle = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(true);
+    };
+    window.addEventListener('resize', handle);
+    return () => window.removeEventListener('resize', handle);
+  }, []);
 
   // user-search state
   const [userSearch, setUserSearch] = useState<string>("");
@@ -525,6 +545,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     if (conn?.state === signalR.HubConnectionState.Connected) {
       conn.invoke("JoinChat", id).catch(() => {});
     }
+    // On mobile, close sidebar when a chat is selected
+    if (isMobile) setSidebarOpen(false);
   };
   selectConversationRef.current = handleSelectConversation;
 
@@ -673,14 +695,28 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   return (
     <div className="chat-root">
       <div className="chat-topbar" style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        padding: '0 24px', width: '100%', position: 'fixed', top: 0, right: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: isMobile ? '0 12px' : '0 24px', width: '100%', position: 'fixed', top: 0, left: 0,
         background: tokens.bgMain, zIndex: 1000, height: '56px', boxSizing: 'border-box',
         borderBottom: `1px solid ${tokens.border}`,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+        {/* Left side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16 }}>
+          {isMobile && (
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(v => !v)}
+              aria-label="Toggle menu"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: tokens.textMain, display: 'flex', alignItems: 'center' }}
+            >
+              <HamburgerIcon />
+            </button>
+          )}
           <img src="/logo.jpeg" alt="ChatR" style={{ height: 32, borderRadius: 6 }} />
-          {/* Avatar — click opens file picker; pencil opens availability editor */}
+        </div>
+
+        {/* Right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <UserAvatar
               key={avatarVersion}
@@ -690,15 +726,17 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               editable
               onClick={() => fileInputRef.current?.click()}
             />
-            <button
-              type="button"
-              className="chat-topbar-user"
-              onClick={() => setShowAvailabilityEditor((v) => !v)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: tokens.textMuted, fontSize: '0.85rem' }}
-              title="Edit availability"
-            >
-              {currentUserName} ✎
-            </button>
+            {!isMobile && (
+              <button
+                type="button"
+                className="chat-topbar-user"
+                onClick={() => setShowAvailabilityEditor((v) => !v)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: tokens.textMuted, fontSize: '0.85rem' }}
+                title="Edit availability"
+              >
+                {currentUserName} ✎
+              </button>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -710,7 +748,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               <span style={{ fontSize: '0.75rem', color: tokens.textMuted }}>Uploading…</span>
             )}
           </div>
-          {onInviteUser && (
+          {!isMobile && onInviteUser && (
             <button
               type="button"
               onClick={onInviteUser}
@@ -746,7 +784,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       </div>
 
       <div className="chat-body" style={{ marginTop: '56px' }}>
-        <aside className="chat-sidebar">
+        <aside className={`chat-sidebar${isMobile && !sidebarOpen ? ' sidebar-hidden' : ''}`}>
           <div className="chat-sidebar-header" />
 
           <GroupCreation onCreateGroup={handleCreateGroup} isLoading={isCreatingGroup} token={authToken} />
@@ -795,6 +833,21 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
           {selectedConversation ? (
             <>
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '8px 14px', background: 'none',
+                    border: 'none', borderBottom: `1px solid ${tokens.border}`,
+                    color: tokens.accent, fontSize: '0.85rem', cursor: 'pointer',
+                    width: '100%', textAlign: 'left',
+                  }}
+                >
+                  ← Back
+                </button>
+              )}
               <ChatHeader conversation={selectedConversation} />
 
               {selectedConversation.type === "group" && (
