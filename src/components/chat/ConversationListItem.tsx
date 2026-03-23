@@ -30,7 +30,14 @@ const ConversationListItem: React.FC<Props> = ({ conversation, isSelected, onCli
       </div>
       <div className="conversation-content">
         <div className="conversation-row-top">
-          <span className="conversation-name">{name}</span>
+          <span className="conversation-name">
+            {name}
+            {type === "direct" && conversation.otherUserGroup && (
+              <span style={{ fontWeight: 400, fontSize: "0.72em", opacity: 0.6, marginLeft: 5 }}>
+                ({conversation.otherUserGroup})
+              </span>
+            )}
+          </span>
           {unreadCount > 0 && <span className="conversation-unread-badge">{unreadCount}</span>}
         </div>
         {conversation.availability && (

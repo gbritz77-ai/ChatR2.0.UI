@@ -12,6 +12,7 @@ export interface Conversation {
   otherUserId?: string;     // used for presence matching
   createdByUserId?: string; // used to highlight group creator
   otherUserHasAvatar?: boolean;
+  otherUserGroup?: string | null;
   availability?: { days: string; from: string; to: string } | null;
 }
 

@@ -156,6 +156,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     otherUserId: dto.otherUserId ?? undefined,
     createdByUserId: dto.createdByUserId ?? undefined,
     otherUserHasAvatar: dto.otherUserHasAvatar ?? false,
+    otherUserGroup: dto.otherUserGroup ?? null,
     availability: (!dto.isGroup && dto.otherUserAvailabilityDays && dto.otherUserAvailabilityFrom && dto.otherUserAvailabilityTo)
       ? { days: dto.otherUserAvailabilityDays, from: dto.otherUserAvailabilityFrom, to: dto.otherUserAvailabilityTo }
       : null,

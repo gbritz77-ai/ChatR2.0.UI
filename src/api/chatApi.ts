@@ -16,6 +16,7 @@ export interface ChatDto {
   otherUserAvailabilityFrom?: string | null;
   otherUserAvailabilityTo?:   string | null;
   otherUserHasAvatar?: boolean | null;
+  otherUserGroup?: string | null;
 }
 
 export interface ChatAttachmentDto {
