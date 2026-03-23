@@ -651,7 +651,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                 if (!grouped[g]) grouped[g] = [];
                 grouped[g].push(u);
               }
-              const showGroupHeadings = Object.keys(grouped).length > 1 || !userGroupFilter;
+              const showGroupHeadings = Object.keys(grouped).length > 1;
               return (
                 <div className="user-search-results">
                   {Object.entries(grouped).map(([groupName, members]) => (
