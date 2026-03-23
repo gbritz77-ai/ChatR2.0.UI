@@ -114,6 +114,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
   const { theme, tokens, toggleTheme } = useTheme();
   const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
@@ -141,6 +142,23 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     const total = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
     document.title = total > 0 ? `(${total}) ChatR` : "ChatR";
   }, [conversations]);
+
+  // Initialise AudioContext on first user interaction (browser autoplay policy)
+  useEffect(() => {
+    const unlock = () => {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      } else if (audioCtxRef.current.state === "suspended") {
+        void audioCtxRef.current.resume();
+      }
+    };
+    document.addEventListener("click", unlock);
+    document.addEventListener("keydown", unlock);
+    return () => {
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("keydown", unlock);
+    };
+  }, []);
 
   // Notification permission state
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(
@@ -222,7 +240,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     // Helper: play a soft notification ding
     const playNotificationSound = () => {
       try {
-        const ctx = new AudioContext();
+        const ctx = audioCtxRef.current;
+        if (!ctx || ctx.state === "suspended") return;
         const oscillator = ctx.createOscillator();
         const gain = ctx.createGain();
         oscillator.connect(gain);
