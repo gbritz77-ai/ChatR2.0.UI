@@ -643,42 +643,19 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
             {!isLoadingUsers && allUsers.length === 0 && (
               <div className="user-search-hint">No users found</div>
             )}
-            {!isLoadingUsers && allUsers.length > 0 && (() => {
-              // Group users by their group field
-              const grouped: Record<string, ChatUserDto[]> = {};
-              for (const u of allUsers) {
-                const g = u.group ?? "No group";
-                if (!grouped[g]) grouped[g] = [];
-                grouped[g].push(u);
-              }
-              const showGroupHeadings = Object.keys(grouped).length > 1;
-              return (
-                <div className="user-search-results">
-                  {Object.entries(grouped).map(([groupName, members]) => (
-                    <div key={groupName}>
-                      {showGroupHeadings && (
-                        <div style={{
-                          fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em",
-                          textTransform: "uppercase", color: tokens.accent,
-                          padding: "8px 10px 4px", opacity: 0.85,
-                        }}>
-                          {groupName}
-                        </div>
-                      )}
-                      {members.map((u) => (
-                        <button key={u.id} type="button" className="user-search-item" onClick={() => handleStartPrivateChat(u)}>
-                          <div className="user-search-item-avatar">{u.username.charAt(0).toUpperCase()}</div>
-                          <div className="user-search-item-text">
-                            <div className="user-search-item-name">{u.username}</div>
-                            {u.email && <div className="user-search-item-email">{u.email}</div>}
-                          </div>
-                        </button>
-                      ))}
+            {!isLoadingUsers && allUsers.length > 0 && (
+              <div className="user-search-results">
+                {allUsers.map((u) => (
+                  <button key={u.id} type="button" className="user-search-item" onClick={() => handleStartPrivateChat(u)}>
+                    <div className="user-search-item-avatar">{u.username.charAt(0).toUpperCase()}</div>
+                    <div className="user-search-item-text">
+                      <div className="user-search-item-name">{u.username}</div>
+                      {u.email && <div className="user-search-item-email">{u.email}</div>}
                     </div>
-                  ))}
-                </div>
-              );
-            })()}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {isLoadingConversations && conversations.length === 0 ? (
