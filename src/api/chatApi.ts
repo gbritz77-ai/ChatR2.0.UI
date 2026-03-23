@@ -281,3 +281,8 @@ export async function getMe(token: string): Promise<{ id?: string; availabilityD
   const res = await api.get('/Users/me');
   return res.data;
 }
+
+export async function editMessage(chatId: string, messageId: string, text: string, token: string): Promise<void> {
+  applyToken(token);
+  await api.put(`/Chats/${chatId}/messages/${messageId}`, { text });
+}

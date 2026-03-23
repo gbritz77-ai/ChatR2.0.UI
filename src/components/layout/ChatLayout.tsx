@@ -19,6 +19,7 @@ import {
   searchUsers,
   updateMyAvailability,
   getMe,
+  editMessage,
   type ChatDto,
   type ChatMessageDto,
   type ChatUserDto,
@@ -279,6 +280,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       );
     });
 
+    connection.on("MessageEdited", (data: { messageId: string; text: string; editedAt: string }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === data.messageId ? { ...m, text: data.text, isEdited: true, editedAt: data.editedAt } : m
+        )
+      );
+    });
+
     // Handle new chat created by another user
     connection.on("NewChatCreated", async () => {
       const chatDtos = await getChats(authToken);
@@ -494,6 +503,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     }
   };
 
+  const handleEditMessage = async (messageId: string, newText: string) => {
+    if (!selectedConversationId) return;
+    await editMessage(selectedConversationId, messageId, newText, authToken);
+    setMessages((prev) =>
+      prev.map((m) => m.id === messageId ? { ...m, text: newText, isEdited: true } : m)
+    );
+  };
+
   const handleSaveAvailability = async (days: string | null, from: string | null, to: string | null) => {
     try {
       await updateMyAvailability(authToken, { days, from, to });
@@ -671,7 +688,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                 />
               )}
 
-              <MessageList messages={messages} onDownloadAttachment={handleGetAttachmentUrl} />
+              <MessageList messages={messages} onDownloadAttachment={handleGetAttachmentUrl} onEditMessage={handleEditMessage} />
               <MessageInput chatId={selectedConversationId} onSend={handleSendMessage} />
 
               {isLoadingMessages && messages.length === 0 && (

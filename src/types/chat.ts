@@ -31,6 +31,8 @@ export interface Message {
   createdAt: string;        // ISO string
   gifUrl?: string;          // optional GIF URL
   attachments?: MessageAttachment[];
+  isEdited?: boolean;
+  editedAt?: string;
 }
 export type ChatAttachment = {
   attachmentId: string;
