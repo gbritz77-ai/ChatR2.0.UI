@@ -136,6 +136,12 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   // Ref to latest handleSelectConversation so notification onclick can use it without stale closure
   const selectConversationRef = useRef<(id: string) => void>(() => {});
 
+  // Update browser tab title with total unread count
+  useEffect(() => {
+    const total = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
+    document.title = total > 0 ? `(${total}) ChatR` : "ChatR";
+  }, [conversations]);
+
   // Notification permission state
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(
     () => ('Notification' in window ? Notification.permission : null)
