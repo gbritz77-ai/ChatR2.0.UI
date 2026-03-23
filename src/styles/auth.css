@@ -4,6 +4,12 @@
 }
 
 :root{
+  --shadow: 0 20px 60px rgba(0,0,0,0.55);
+  --radius: 16px;
+}
+
+/* Auth-only variables — scoped so they don't override chat theme */
+.auth-page, .auth-page *{
   --bg: #0b1220;
   --panel: rgba(255,255,255,0.06);
   --panel-2: rgba(255,255,255,0.08);
@@ -12,12 +18,9 @@
   --muted: rgba(255,255,255,0.62);
 
   --primary: #38bdf8;
-  --accent: #a855f7;
+  --auth-accent: #a855f7;
   --success: #22c55e;
   --danger: #f87171;
-
-  --shadow: 0 20px 60px rgba(0,0,0,0.55);
-  --radius: 16px;
 }
 
 .auth-page{
@@ -106,7 +109,7 @@
   font-size: 14px;
   color: #06101a;
   cursor: pointer;
-  background: linear-gradient(90deg, var(--primary), var(--success), var(--accent));
+  background: linear-gradient(90deg, var(--primary), var(--success), var(--auth-accent));
   box-shadow: 0 10px 22px rgba(0,0,0,0.25);
   transition: transform 120ms ease, filter 120ms ease;
 }
@@ -126,7 +129,8 @@ body{
 }
 
 /* ── Light theme overrides ───────────────────────────────────────────────── */
-[data-theme="light"] {
+[data-theme="light"] .auth-page,
+[data-theme="light"] .auth-page * {
   --bg: #f1f5f9;
   --panel: rgba(255,255,255,0.80);
   --panel-2: rgba(255,255,255,0.90);
