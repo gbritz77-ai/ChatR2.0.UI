@@ -16,7 +16,6 @@ import {
   markChatRead,
   createPrivateChat,
   createGroupChat,
-  getGroupAvatarUploadUrl,
   getUsers,
   updateMyAvailability,
   getMe,
