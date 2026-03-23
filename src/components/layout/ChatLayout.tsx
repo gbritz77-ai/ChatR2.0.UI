@@ -219,6 +219,26 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
     connectionRef.current = connection;
 
+    // Helper: play a soft notification ding
+    const playNotificationSound = () => {
+      try {
+        const ctx = new AudioContext();
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.35);
+      } catch {
+        // Audio unavailable
+      }
+    };
+
     // Helper: fire a desktop notification for a message from someone else
     const fireNotification = (chatId: string, senderName: string, text: string | undefined) => {
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -245,8 +265,9 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         // Adding here too causes a duplicate when SignalR fires before the POST response returns.
         if (isMyMessage) return;
 
-        // Notify if the window is not focused (user has switched to another app/tab)
+        // Sound + desktop notification if window is not focused
         if (!document.hasFocus()) {
+          playNotificationSound();
           fireNotification(chatId, senderName, dto.text);
         }
 
@@ -272,7 +293,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               c.id === chatId ? { ...c, unreadCount: c.unreadCount + 1 } : c
             )
           );
-          // Always notify for messages in background chats
+          // Always sound + notify for messages in background chats
+          playNotificationSound();
           fireNotification(chatId, senderName, dto.text);
         }
       }
