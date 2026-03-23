@@ -218,7 +218,34 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", width: "100%" }}>
+      {/* Row 1: text input full width */}
+      <textarea
+        ref={textareaRef}
+        className="message-input"
+        placeholder={selectedGifUrl ? "Add a caption..." : "Type a message..."}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={handleKeyDown}
+        rows={2}
+        disabled={busy}
+        style={{
+          width: "100%",
+          resize: "none",
+          borderRadius: "12px",
+          border: `1px solid ${tokens.border2}`,
+          padding: "10px 14px",
+          fontSize: "0.9rem",
+          backgroundColor: tokens.bgInput,
+          color: tokens.textMain,
+          outline: "none",
+          fontFamily: "inherit",
+          minHeight: "52px",
+          boxSizing: "border-box",
+        }}
+      />
+
+      {/* Row 2: action buttons + send */}
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", width: "100%", marginTop: "6px" }}>
         <button
           type="button"
           onClick={() => setShowEmojiPicker((v) => !v)}
@@ -261,30 +288,8 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
           📎
         </button>
 
-        <textarea
-          ref={textareaRef}
-          className="message-input"
-          placeholder={selectedGifUrl ? "Add a caption..." : "Type a message..."}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={1}
-          disabled={busy}
-          style={{
-            flex: 1,
-            width: "100%",
-            resize: "none",
-            borderRadius: "999px",
-            border: `1px solid ${tokens.border2}`,
-            padding: "8px 12px",
-            fontSize: "0.85rem",
-            backgroundColor: tokens.bgInput,
-            color: tokens.textMain,
-            outline: "none",
-            fontFamily: "inherit",
-            minHeight: "40px",
-          }}
-        />
+        {/* Spacer pushes Send to the right */}
+        <div style={{ flex: 1 }} />
 
         <button
           className="message-send-button"
@@ -294,7 +299,7 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
           style={{
             borderRadius: "999px",
             border: "none",
-            padding: "8px 16px",
+            padding: "8px 24px",
             fontSize: "0.85rem",
             fontWeight: 500,
             background: tokens.accent,
