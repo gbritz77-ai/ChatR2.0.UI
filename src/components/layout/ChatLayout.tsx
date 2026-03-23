@@ -639,11 +639,11 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               value={userSearch}
               onChange={(e) => setUserSearch(e.target.value)}
             />
-            {isLoadingUsers && <div className="user-search-hint">Loading…</div>}
-            {!isLoadingUsers && allUsers.length === 0 && (
+            {userSearch.trim() && isLoadingUsers && <div className="user-search-hint">Searching…</div>}
+            {userSearch.trim() && !isLoadingUsers && allUsers.length === 0 && (
               <div className="user-search-hint">No users found</div>
             )}
-            {!isLoadingUsers && allUsers.length > 0 && (
+            {userSearch.trim() && !isLoadingUsers && allUsers.length > 0 && (
               <div className="user-search-results">
                 {allUsers.map((u) => (
                   <button key={u.id} type="button" className="user-search-item" onClick={() => handleStartPrivateChat(u)}>
