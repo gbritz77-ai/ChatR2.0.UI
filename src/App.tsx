@@ -67,13 +67,13 @@ export default function App() {
 
           {error && <div className="auth-error">{error}</div>}
 
-          <form onSubmit={handleLogin} className="auth-form">
+          <form onSubmit={handleLogin} className="auth-form" autoComplete="off">
             <div className="field">
               <label>Username or Email</label>
               <input
                 value={usernameOrEmail}
                 onChange={(e) => setUser(e.target.value)}
-                autoComplete="username"
+                autoComplete="off"
               />
             </div>
 
@@ -84,7 +84,7 @@ export default function App() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   style={{ paddingRight: "2.5rem", width: "100%", boxSizing: "border-box" }}
                 />
                 <button
