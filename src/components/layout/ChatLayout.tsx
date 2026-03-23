@@ -279,19 +279,26 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     // Helper: play a soft notification ding
     const playNotificationSound = () => {
       try {
-        const ctx = audioCtxRef.current;
-        if (!ctx || ctx.state === "suspended") return;
-        const oscillator = ctx.createOscillator();
-        const gain = ctx.createGain();
-        oscillator.connect(gain);
-        gain.connect(ctx.destination);
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.12);
-        gain.gain.setValueAtTime(0.25, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-        oscillator.start(ctx.currentTime);
-        oscillator.stop(ctx.currentTime + 0.35);
+        let ctx = audioCtxRef.current;
+        if (!ctx) { ctx = new AudioContext(); audioCtxRef.current = ctx; }
+        const play = () => {
+          const oscillator = ctx!.createOscillator();
+          const gain = ctx!.createGain();
+          oscillator.connect(gain);
+          gain.connect(ctx!.destination);
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(880, ctx!.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(660, ctx!.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.25, ctx!.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx!.currentTime + 0.35);
+          oscillator.start(ctx!.currentTime);
+          oscillator.stop(ctx!.currentTime + 0.35);
+        };
+        if (ctx.state === "suspended") {
+          void ctx.resume().then(play);
+        } else {
+          play();
+        }
       } catch {
         // Audio unavailable
       }
@@ -323,9 +330,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         // Adding here too causes a duplicate when SignalR fires before the POST response returns.
         if (isMyMessage) return;
 
-        // Always play sound for messages from others; desktop notification only when window not focused
+        // Sound always; if window not focused treat same as background chat
         playNotificationSound();
         if (!document.hasFocus()) {
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === chatId ? { ...c, unreadCount: c.unreadCount + 1 } : c
+            )
+          );
           fireNotification(chatId, senderName, dto.text);
         }
 
