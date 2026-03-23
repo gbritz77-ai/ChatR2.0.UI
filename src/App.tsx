@@ -60,28 +60,9 @@ export default function App() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div className="auth-header">
-              <img src="/logo.jpeg" alt="ChatR" style={{ height: 144, marginBottom: 8, borderRadius: 8 }} />
-              <p>Sign in to continue.</p>
-            </div>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              style={{
-                background: "rgba(255,255,255,0.10)",
-                border: "1px solid rgba(255,255,255,0.18)",
-                borderRadius: "999px",
-                cursor: "pointer",
-                fontSize: "1rem",
-                padding: "6px 10px",
-                color: "inherit",
-                flexShrink: 0,
-              }}
-            >
-              {theme === "dark" ? "☀ Light" : "🌙 Dark"}
-            </button>
+          <div className="auth-header" style={{ textAlign: "center" }}>
+            <img src="/logo.jpeg" alt="ChatR" style={{ height: 144, marginBottom: 8, borderRadius: 8 }} />
+            <p>Sign in to continue.</p>
           </div>
 
           {error && <div className="auth-error">{error}</div>}
@@ -134,6 +115,15 @@ export default function App() {
               {isLoggingIn ? "Signing in…" : "Login"}
             </button>
           </form>
+          <div style={{ textAlign: "center", marginTop: 16 }}>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              style={{ background: "none", border: "none", cursor: "pointer", opacity: 0.5, fontSize: "0.8rem", color: "inherit" }}
+            >
+              {theme === "dark" ? "☀ Switch to light mode" : "🌙 Switch to dark mode"}
+            </button>
+          </div>
         </div>
       </div>
     );
