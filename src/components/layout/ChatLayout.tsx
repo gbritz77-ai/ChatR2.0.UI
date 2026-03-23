@@ -634,20 +634,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
           <div className="user-search-container">
             <div className="user-search-label">Start private chat</div>
-            <select
-              value={userGroupFilter}
-              onChange={(e) => setUserGroupFilter(e.target.value)}
-              style={{
-                width: "100%", marginBottom: 6, padding: "7px 10px", borderRadius: 8,
-                border: `1px solid ${tokens.border2}`, background: tokens.bgInput,
-                color: tokens.textMain, fontSize: "0.82rem", cursor: "pointer",
-              }}
-            >
-              <option value="">All groups</option>
-              {["Medical", "Property", "Legal", "Media", "Client", "Crystal Clara"].map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
             <input
               className="user-search-input"
               type="text"
