@@ -102,7 +102,16 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleMouseEnter = () => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    setShowActions(true);
+  };
+  const handleMouseLeave = () => {
+    hideTimeoutRef.current = setTimeout(() => setShowActions(false), 300);
+  };
 
   useEffect(() => {
     if (isEditing) {
@@ -142,8 +151,8 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
     <div
       className={`message-bubble ${message.isMe ? "me" : "them"}`}
       style={{ position: "relative" }}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Reply quote preview */}
       {message.replyTo && <ReplyQuote replyTo={message.replyTo} />}
@@ -201,11 +210,14 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
 
           {/* Action buttons on hover */}
           {showActions && !isEditing && (
-            <div style={{
-              position: "absolute", top: -28,
-              [message.isMe ? "right" : "left"]: 0,
-              display: "flex", gap: 4, zIndex: 10,
-            }}>
+            <div
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              style={{
+                position: "absolute", top: -28,
+                [message.isMe ? "right" : "left"]: 0,
+                display: "flex", gap: 4, zIndex: 10,
+              }}>
               {onReply && (
                 <button type="button" style={actionBtnStyle}
                   onClick={() => { onReply(message); setShowActions(false); }}
