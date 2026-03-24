@@ -21,6 +21,9 @@ import {
   getMe,
   editMessage,
   deleteMessage,
+  deleteGroup,
+  updateGroupAvatar,
+  getGroupAvatarUploadUrl,
   type ChatDto,
   type ChatMessageDto,
   type ChatUserDto,
@@ -424,6 +427,17 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       setMessages((prev) => prev.filter((m) => m.id !== data.messageId));
     });
 
+    connection.on("GroupDeleted", (data: { chatId: string }) => {
+      setConversations((prev) => prev.filter((c) => c.id !== data.chatId));
+      setSelectedConversationId((prev) => prev === data.chatId ? "" : prev);
+    });
+
+    connection.on("GroupAvatarUpdated", (data: { chatId: string; avatarUrl: string }) => {
+      setConversations((prev) =>
+        prev.map((c) => c.id === data.chatId ? { ...c, chatAvatarUrl: data.avatarUrl } : c)
+      );
+    });
+
     // Handle new chat created by another user
     connection.on("NewChatCreated", async () => {
       const chatDtos = await getChats(authToken);
@@ -654,6 +668,31 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     setMessages((prev) => prev.filter((m) => m.id !== messageId));
   };
 
+  const handleDeleteGroup = async (chatId: string) => {
+    try {
+      await deleteGroup(chatId, authToken);
+      setConversations((prev) => prev.filter((c) => c.id !== chatId));
+      if (selectedConversationId === chatId) setSelectedConversationId("");
+    } catch (e) {
+      console.error("Failed to delete group", e);
+      alert("Failed to delete group. Please try again.");
+    }
+  };
+
+  const handleUpdateGroupPhoto = async (chatId: string, file: File) => {
+    try {
+      const { uploadUrl, key } = await getGroupAvatarUploadUrl(authToken, file.type || "image/jpeg");
+      await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type || "image/jpeg" } });
+      const { avatarUrl } = await updateGroupAvatar(chatId, key, authToken);
+      setConversations((prev) =>
+        prev.map((c) => c.id === chatId ? { ...c, chatAvatarUrl: avatarUrl } : c)
+      );
+    } catch (e) {
+      console.error("Failed to update group photo", e);
+      alert("Failed to update group photo.");
+    }
+  };
+
   const handleSaveAvailability = async (days: string | null, from: string | null, to: string | null) => {
     try {
       await updateMyAvailability(authToken, { days, from, to });
@@ -848,7 +887,12 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                   ← Back
                 </button>
               )}
-              <ChatHeader conversation={selectedConversation} />
+              <ChatHeader
+                conversation={selectedConversation}
+                currentUserId={currentUserId}
+                onDeleteGroup={handleDeleteGroup}
+                onUpdateGroupPhoto={handleUpdateGroupPhoto}
+              />
 
               {selectedConversation.type === "group" && (
                 <GroupMembersPanel

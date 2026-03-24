@@ -301,3 +301,14 @@ export async function deleteMessage(chatId: string, messageId: string, token: st
   applyToken(token);
   await api.delete(`/Chats/${chatId}/messages/${messageId}`);
 }
+
+export async function deleteGroup(chatId: string, token: string): Promise<void> {
+  applyToken(token);
+  await api.delete(`/Chats/${chatId}`);
+}
+
+export async function updateGroupAvatar(chatId: string, avatarKey: string, token: string): Promise<{ avatarUrl: string }> {
+  applyToken(token);
+  const res = await api.put<{ avatarUrl: string }>(`/Chats/${chatId}/avatar`, { avatarKey });
+  return res.data;
+}
