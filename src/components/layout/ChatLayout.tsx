@@ -842,43 +842,44 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
           />
         )}
 
-        {/* Forward message modal */}
-        {forwardingMessage && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ background: tokens.bgCard, borderRadius: 14, padding: "20px 24px", minWidth: 300, maxWidth: 400, width: "90%", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
-              <div style={{ fontWeight: 600, fontSize: "1rem", marginBottom: 4, color: tokens.textMain }}>Forward message</div>
-              <div style={{ fontSize: "0.8rem", color: tokens.textMuted, marginBottom: 14, borderLeft: `3px solid ${tokens.accent}`, paddingLeft: 8 }}>
-                {forwardingMessage.text || "📎 Attachment"}
-              </div>
-              <div style={{ maxHeight: 280, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-                {conversations.filter((c) => c.id !== selectedConversationId).map((c) => (
-                  <button key={c.id} type="button"
-                    onClick={async () => {
-                      await sendChatMessage(c.id, forwardingMessage.text, authToken);
-                      setForwardingMessage(null);
-                    }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-                      borderRadius: 8, border: `1px solid ${tokens.border}`, background: "none",
-                      cursor: "pointer", color: tokens.textMain, textAlign: "left",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = tokens.border)}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-                  >
-                    <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>{c.name}</span>
-                    <span style={{ fontSize: "0.72rem", color: tokens.textMuted, marginLeft: "auto" }}>
-                      {c.type === "group" ? "Group" : "Direct"}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <button type="button" onClick={() => setForwardingMessage(null)}
-                style={{ marginTop: 14, width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${tokens.border}`, background: "none", color: tokens.textMuted, cursor: "pointer", fontSize: "0.85rem" }}
-              >Cancel</button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Forward message modal — outside topbar so position:fixed works from viewport */}
+      {forwardingMessage && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: tokens.bgCard, borderRadius: 14, padding: "20px 24px", minWidth: 300, maxWidth: 400, width: "90%", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontWeight: 600, fontSize: "1rem", marginBottom: 4, color: tokens.textMain }}>Forward message</div>
+            <div style={{ fontSize: "0.8rem", color: tokens.textMuted, marginBottom: 14, borderLeft: `3px solid ${tokens.accent}`, paddingLeft: 8 }}>
+              {forwardingMessage.text || "📎 Attachment"}
+            </div>
+            <div style={{ maxHeight: 280, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+              {conversations.filter((c) => c.id !== selectedConversationId).map((c) => (
+                <button key={c.id} type="button"
+                  onClick={async () => {
+                    await sendChatMessage(c.id, forwardingMessage.text, authToken);
+                    setForwardingMessage(null);
+                  }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                    borderRadius: 8, border: `1px solid ${tokens.border}`, background: "none",
+                    cursor: "pointer", color: tokens.textMain, textAlign: "left",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = tokens.border)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                >
+                  <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>{c.name}</span>
+                  <span style={{ fontSize: "0.72rem", color: tokens.textMuted, marginLeft: "auto" }}>
+                    {c.type === "group" ? "Group" : "Direct"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={() => setForwardingMessage(null)}
+              style={{ marginTop: 14, width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${tokens.border}`, background: "none", color: tokens.textMuted, cursor: "pointer", fontSize: "0.85rem" }}
+            >Cancel</button>
+          </div>
+        </div>
+      )}
 
       <div className="chat-body" style={{ marginTop: '56px' }}>
         <aside className={`chat-sidebar${isMobile && !sidebarOpen ? ' sidebar-hidden' : ''}`}>
