@@ -23,6 +23,12 @@ export interface MessageAttachment {
   contentType: string;
 }
 
+export interface ReplyPreview {
+  id: string;
+  senderName: string;
+  text: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -35,6 +41,7 @@ export interface Message {
   attachments?: MessageAttachment[];
   isEdited?: boolean;
   editedAt?: string;
+  replyTo?: ReplyPreview;
 }
 export type ChatAttachment = {
   attachmentId: string;

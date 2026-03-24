@@ -9,9 +9,11 @@ interface Props {
   onDownloadAttachment: (attachmentId: string, chatId: string) => Promise<string>;
   onEditMessage?: (messageId: string, newText: string) => Promise<void>;
   onDeleteMessage?: (messageId: string) => Promise<void>;
+  onReplyMessage?: (message: Message) => void;
+  onForwardMessage?: (message: Message) => void;
 }
 
-const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMessage, onDeleteMessage }) => {
+const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMessage, onDeleteMessage, onReplyMessage, onForwardMessage }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -24,11 +26,15 @@ const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMe
   return (
     <div className="message-list" ref={containerRef}>
       {messages.map((m) => (
-        <div
-          key={m.id}
-          className={`message-row ${m.isMe ? "me" : "them"}`}
-        >
-          <MessageBubble message={m} onDownloadAttachment={onDownloadAttachment} onEdit={onEditMessage} onDelete={onDeleteMessage} />
+        <div key={m.id} className={`message-row ${m.isMe ? "me" : "them"}`}>
+          <MessageBubble
+            message={m}
+            onDownloadAttachment={onDownloadAttachment}
+            onEdit={onEditMessage}
+            onDelete={onDeleteMessage}
+            onReply={onReplyMessage}
+            onForward={onForwardMessage}
+          />
         </div>
       ))}
     </div>

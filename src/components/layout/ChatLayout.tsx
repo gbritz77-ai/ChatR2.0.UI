@@ -131,6 +131,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const [myAvailability, setMyAvailability] = useState<{ days: string; from: string; to: string } | null>(null);
   const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
 
+  // Reply / Forward state
+  const [replyingTo, setReplyingTo] = useState<(Message & { messageId: string }) | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+
   // Mobile responsive state
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -277,6 +281,9 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         fileName: a.fileName,
         contentType: a.contentType,
       })),
+      isEdited: (dto as any).isEdited,
+      editedAt: (dto as any).editedAt,
+      replyTo: (dto as any).replyTo ?? undefined,
     };
   };
 
@@ -585,7 +592,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
 
-  const handleSendMessage = async (text: string, gifUrl?: string, attachmentId?: string) => {
+  const handleSendMessage = async (text: string, gifUrl?: string, attachmentId?: string, replyToMessageId?: string) => {
     if (!selectedConversationId) return;
 
     const trimmed = text.trim();
@@ -601,12 +608,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       createdAt: new Date().toISOString(),
       isMe: true,
       gifUrl,
+      replyTo: replyingTo ? { id: replyingTo.id, senderName: replyingTo.senderName, text: replyingTo.text } : undefined,
     };
 
     setMessages((prev) => [...prev, optimistic]);
+    setReplyingTo(null);
 
     try {
-      const dto = await sendChatMessage(selectedConversationId, trimmed, authToken, gifUrl, attachmentId);
+      const dto = await sendChatMessage(selectedConversationId, trimmed, authToken, gifUrl, attachmentId, replyToMessageId);
       const real = mapMessageDto(dto);
       setMessages((prev) => prev.map((m) => (m.id === tempId ? real : m)));
     } catch (err: unknown) {
@@ -820,6 +829,43 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
             onClose={() => setShowAvailabilityEditor(false)}
           />
         )}
+
+        {/* Forward message modal */}
+        {forwardingMessage && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ background: tokens.bgCard, borderRadius: 14, padding: "20px 24px", minWidth: 300, maxWidth: 400, width: "90%", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
+              <div style={{ fontWeight: 600, fontSize: "1rem", marginBottom: 4, color: tokens.textMain }}>Forward message</div>
+              <div style={{ fontSize: "0.8rem", color: tokens.textMuted, marginBottom: 14, borderLeft: `3px solid ${tokens.accent}`, paddingLeft: 8 }}>
+                {forwardingMessage.text || "📎 Attachment"}
+              </div>
+              <div style={{ maxHeight: 280, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                {conversations.filter((c) => c.id !== selectedConversationId).map((c) => (
+                  <button key={c.id} type="button"
+                    onClick={async () => {
+                      await sendChatMessage(c.id, forwardingMessage.text, authToken);
+                      setForwardingMessage(null);
+                    }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                      borderRadius: 8, border: `1px solid ${tokens.border}`, background: "none",
+                      cursor: "pointer", color: tokens.textMain, textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = tokens.border)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                  >
+                    <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>{c.name}</span>
+                    <span style={{ fontSize: "0.72rem", color: tokens.textMuted, marginLeft: "auto" }}>
+                      {c.type === "group" ? "Group" : "Direct"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={() => setForwardingMessage(null)}
+                style={{ marginTop: 14, width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${tokens.border}`, background: "none", color: tokens.textMuted, cursor: "pointer", fontSize: "0.85rem" }}
+              >Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="chat-body" style={{ marginTop: '56px' }}>
@@ -906,8 +952,20 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                 />
               )}
 
-              <MessageList messages={messages} onDownloadAttachment={handleGetAttachmentUrl} onEditMessage={handleEditMessage} onDeleteMessage={handleDeleteMessage} />
-              <MessageInput chatId={selectedConversationId} onSend={handleSendMessage} />
+              <MessageList
+                messages={messages}
+                onDownloadAttachment={handleGetAttachmentUrl}
+                onEditMessage={handleEditMessage}
+                onDeleteMessage={handleDeleteMessage}
+                onReplyMessage={(msg) => setReplyingTo({ ...msg, messageId: msg.id })}
+                onForwardMessage={(msg) => setForwardingMessage(msg)}
+              />
+              <MessageInput
+                chatId={selectedConversationId}
+                onSend={handleSendMessage}
+                replyingTo={replyingTo ? { messageId: replyingTo.messageId, id: replyingTo.id, senderName: replyingTo.senderName, text: replyingTo.text } : undefined}
+                onCancelReply={() => setReplyingTo(null)}
+              />
 
               {isLoadingMessages && messages.length === 0 && (
                 <div style={{ padding: "0.5rem 0.75rem", fontSize: "0.8rem", color: tokens.textMuted }}>

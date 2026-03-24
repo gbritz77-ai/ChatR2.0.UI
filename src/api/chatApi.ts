@@ -116,7 +116,8 @@ export async function sendChatMessage(
   text: string,
   token: string,
   gifUrl?: string,
-  attachmentId?: string
+  attachmentId?: string,
+  replyToMessageId?: string
 ): Promise<ChatMessageDto> {
   applyToken(token);
 
@@ -125,7 +126,8 @@ export async function sendChatMessage(
 
   if (trimmed) payload.text = trimmed;
   if (gifUrl) payload.gifUrl = gifUrl;
-  if (attachmentId) payload.attachmentIds = [attachmentId]; // ✅ FIX
+  if (attachmentId) payload.attachmentIds = [attachmentId];
+  if (replyToMessageId) (payload as any).replyToMessageId = replyToMessageId;
 
   // allow attachment-only or gif-only messages, but not totally empty
   if (!payload.text && !payload.gifUrl && (!payload.attachmentIds || payload.attachmentIds.length === 0)) {

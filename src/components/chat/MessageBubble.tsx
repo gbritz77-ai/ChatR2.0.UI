@@ -1,13 +1,15 @@
 // src/components/chat/MessageBubble.tsx
 
 import React, { useState, useRef, useEffect } from "react";
-import type { Message, MessageAttachment } from "../../types/chat";
+import type { Message, MessageAttachment, ReplyPreview } from "../../types/chat";
 
 interface Props {
   message: Message;
   onDownloadAttachment: (attachmentId: string, chatId: string) => Promise<string>;
   onEdit?: (messageId: string, newText: string) => Promise<void>;
   onDelete?: (messageId: string) => Promise<void>;
+  onReply?: (message: Message) => void;
+  onForward?: (message: Message) => void;
 }
 
 const AttachmentItem: React.FC<{
@@ -35,17 +37,11 @@ const AttachmentItem: React.FC<{
       onClick={() => void handleClick()}
       disabled={loading}
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        background: "rgba(255,255,255,0.08)",
-        border: "1px solid rgba(255,255,255,0.15)",
-        borderRadius: "8px",
-        padding: "6px 10px",
+        display: "flex", alignItems: "center", gap: "8px",
+        background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
+        borderRadius: "8px", padding: "6px 10px",
         cursor: loading ? "not-allowed" : "pointer",
-        color: "#e5e7eb",
-        fontSize: "0.8rem",
-        marginTop: "6px",
+        color: "#e5e7eb", fontSize: "0.8rem", marginTop: "6px",
         opacity: loading ? 0.7 : 1,
       }}
     >
@@ -60,12 +56,33 @@ const AttachmentItem: React.FC<{
   );
 };
 
-const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit, onDelete }) => {
+const ReplyQuote: React.FC<{ replyTo: ReplyPreview }> = ({ replyTo }) => (
+  <div style={{
+    borderLeft: "3px solid rgba(255,255,255,0.4)",
+    paddingLeft: 8,
+    marginBottom: 6,
+    opacity: 0.75,
+  }}>
+    <div style={{ fontSize: "0.72rem", fontWeight: 600, marginBottom: 2 }}>
+      {replyTo.senderName}
+    </div>
+    <div style={{
+      fontSize: "0.78rem",
+      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+      maxWidth: 220,
+    }}>
+      {replyTo.text || "📎 Attachment"}
+    </div>
+  </div>
+);
+
+const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit, onDelete, onReply, onForward }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.text);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -92,30 +109,37 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      void handleSave();
-    }
-    if (e.key === "Escape") {
-      setIsEditing(false);
-      setEditText(message.text);
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSave(); }
+    if (e.key === "Escape") { setIsEditing(false); setEditText(message.text); }
+  };
+
+  const actionBtnStyle: React.CSSProperties = {
+    background: "rgba(0,0,0,0.35)", border: "none", borderRadius: 6,
+    cursor: "pointer", color: "#e5e7eb", fontSize: "0.72rem",
+    padding: "3px 7px", lineHeight: 1.4, whiteSpace: "nowrap",
   };
 
   return (
-    <div className={`message-bubble ${message.isMe ? "me" : "them"}`} style={{ position: "relative" }}>
+    <div
+      className={`message-bubble ${message.isMe ? "me" : "them"}`}
+      style={{ position: "relative" }}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
+      {/* Reply quote preview */}
+      {message.replyTo && <ReplyQuote replyTo={message.replyTo} />}
+
       {!message.isMe && (
         <span className="message-sender">{message.senderName}</span>
       )}
+
       {message.gifUrl && (
         <img
           src={message.gifUrl}
           alt="GIF"
           style={{
-            maxWidth: "300px",
-            maxHeight: "250px",
-            borderRadius: "4px",
-            marginBottom: message.text ? "8px" : 0,
+            maxWidth: "300px", maxHeight: "250px",
+            borderRadius: "4px", marginBottom: message.text ? "8px" : 0,
           }}
         />
       )}
@@ -130,74 +154,63 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
             rows={2}
             disabled={isSaving}
             style={{
-              width: "100%",
-              borderRadius: 6,
+              width: "100%", borderRadius: 6,
               border: "1px solid rgba(255,255,255,0.3)",
-              background: "rgba(0,0,0,0.25)",
-              color: "inherit",
-              fontSize: "0.9rem",
-              padding: "6px 8px",
-              resize: "none",
-              boxSizing: "border-box",
-              outline: "none",
+              background: "rgba(0,0,0,0.25)", color: "inherit",
+              fontSize: "0.9rem", padding: "6px 8px", resize: "none",
+              boxSizing: "border-box", outline: "none",
             }}
           />
           <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-            <button
-              type="button"
+            <button type="button"
               onClick={() => { setIsEditing(false); setEditText(message.text); }}
               style={{ fontSize: "0.75rem", padding: "2px 10px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "inherit", cursor: "pointer" }}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
+            >Cancel</button>
+            <button type="button"
               onClick={() => void handleSave()}
               disabled={isSaving}
               style={{ fontSize: "0.75rem", padding: "2px 10px", borderRadius: 4, border: "none", background: "#38bdf8", color: "#000", cursor: "pointer", fontWeight: 600 }}
-            >
-              {isSaving ? "Saving…" : "Save"}
-            </button>
+            >{isSaving ? "Saving…" : "Save"}</button>
           </div>
           <span style={{ fontSize: "0.68rem", opacity: 0.5 }}>Enter to save · Esc to cancel</span>
         </div>
       ) : (
         <>
           {message.text && (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
-              <div className="message-text" style={{ flex: 1 }}>{message.text}</div>
+            <div className="message-text">{message.text}</div>
+          )}
+
+          {/* Action buttons on hover */}
+          {showActions && !isEditing && (
+            <div style={{
+              position: "absolute", top: -28,
+              [message.isMe ? "right" : "left"]: 0,
+              display: "flex", gap: 4, zIndex: 10,
+            }}>
+              {onReply && (
+                <button type="button" style={actionBtnStyle}
+                  onClick={() => { onReply(message); setShowActions(false); }}
+                  title="Reply"
+                >↩ Reply</button>
+              )}
+              {onForward && (
+                <button type="button" style={actionBtnStyle}
+                  onClick={() => { onForward(message); setShowActions(false); }}
+                  title="Forward"
+                >⟫ Forward</button>
+              )}
               {message.isMe && onEdit && (
-                <button
-                  type="button"
-                  onClick={() => { setEditText(message.text); setIsEditing(true); }}
-                  title="Edit message"
-                  style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    color: "inherit", opacity: 0.4, padding: "0 2px", flexShrink: 0,
-                    fontSize: "0.75rem", lineHeight: 1,
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                  onMouseLeave={e => (e.currentTarget.style.opacity = "0.4")}
-                >
-                  ✎
-                </button>
+                <button type="button" style={actionBtnStyle}
+                  onClick={() => { setEditText(message.text); setIsEditing(true); setShowActions(false); }}
+                  title="Edit"
+                >✎ Edit</button>
               )}
               {message.isMe && onDelete && (
-                <button
-                  type="button"
+                <button type="button" style={{ ...actionBtnStyle, color: "#fca5a5" }}
                   disabled={isDeleting}
-                  onClick={() => setShowDeleteConfirm(true)}
-                  title="Delete message"
-                  style={{
-                    background: "none", border: "none", cursor: isDeleting ? "not-allowed" : "pointer",
-                    color: "inherit", opacity: 0.4, padding: "0 2px", flexShrink: 0,
-                    fontSize: "0.7rem", lineHeight: 1,
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                  onMouseLeave={e => (e.currentTarget.style.opacity = "0.4")}
-                >
-                  🗑
-                </button>
+                  onClick={() => { setShowDeleteConfirm(true); setShowActions(false); }}
+                  title="Delete"
+                >🗑 Delete</button>
               )}
             </div>
           )}
@@ -207,15 +220,11 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
       {message.attachments && message.attachments.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           {message.attachments.map((a) => (
-            <AttachmentItem
-              key={a.id}
-              attachment={a}
-              chatId={message.conversationId}
-              onDownload={onDownloadAttachment}
-            />
+            <AttachmentItem key={a.id} attachment={a} chatId={message.conversationId} onDownload={onDownloadAttachment} />
           ))}
         </div>
       )}
+
       {showDeleteConfirm && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
@@ -231,41 +240,24 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
               This message will be permanently deleted for everyone in the chat.
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                style={{
-                  padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)",
-                  background: "transparent", color: "#9ca3af", fontSize: "0.875rem", cursor: "pointer",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isDeleting}
+              <button type="button" onClick={() => setShowDeleteConfirm(false)}
+                style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#9ca3af", fontSize: "0.875rem", cursor: "pointer" }}
+              >Cancel</button>
+              <button type="button" disabled={isDeleting}
                 onClick={async () => {
                   setIsDeleting(true);
                   setShowDeleteConfirm(false);
                   try { await onDelete!(message.id); } finally { setIsDeleting(false); }
                 }}
-                style={{
-                  padding: "8px 18px", borderRadius: 8, border: "none",
-                  background: "#ef4444", color: "#fff", fontSize: "0.875rem",
-                  fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                {isDeleting ? "Deleting…" : "Delete"}
-              </button>
+                style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}
+              >{isDeleting ? "Deleting…" : "Delete"}</button>
             </div>
           </div>
         </div>
       )}
+
       <span className="message-time">
-        {new Date(message.createdAt).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
+        {new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         {message.isEdited && (
           <span style={{ marginLeft: 6, fontSize: "0.68em", opacity: 0.65, fontStyle: "italic", letterSpacing: "0.01em" }}>
             ✎ edited

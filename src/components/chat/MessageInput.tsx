@@ -3,13 +3,16 @@ import GifPicker from "./GifPicker";
 import Picker from "@emoji-mart/react";
 import { presignUpload } from "../../api";
 import { useTheme } from "../../context/ThemeContext";
+import type { ReplyPreview } from "../../types/chat";
 
 interface Props {
   chatId: string;
-  onSend: (text: string, gifUrl?: string, attachmentId?: string) => Promise<void> | void;
+  onSend: (text: string, gifUrl?: string, attachmentId?: string, replyToMessageId?: string) => Promise<void> | void;
+  replyingTo?: ReplyPreview & { messageId: string };
+  onCancelReply?: () => void;
 }
 
-const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
+const MessageInput: React.FC<Props> = ({ chatId, onSend, replyingTo, onCancelReply }) => {
   const { theme, tokens } = useTheme();
   const [text, setText] = useState("");
   const [selectedGifUrl, setSelectedGifUrl] = useState<string | null>(null);
@@ -95,11 +98,12 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
         attachmentId = await uploadToS3(selectedFile);
       }
 
-      await onSend(trimmed, selectedGifUrl || undefined, attachmentId);
+      await onSend(trimmed, selectedGifUrl || undefined, attachmentId, replyingTo?.messageId);
 
       setText("");
       setSelectedGifUrl(null);
       clearFile();
+      onCancelReply?.();
     } catch (e: any) {
       setError(e?.message ?? "Failed to send");
     } finally {
@@ -127,6 +131,25 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend }) => {
 
   return (
     <div className="message-input-bar" style={{ position: "relative" }}>
+      {replyingTo && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "6px 12px", borderBottom: `1px solid ${tokens.border2}`,
+          background: tokens.bgCard, borderRadius: "8px 8px 0 0", gap: 8,
+        }}>
+          <div style={{ borderLeft: `3px solid ${tokens.accent}`, paddingLeft: 8, minWidth: 0 }}>
+            <div style={{ fontSize: "0.72rem", fontWeight: 600, color: tokens.accent }}>
+              Replying to {replyingTo.senderName}
+            </div>
+            <div style={{ fontSize: "0.78rem", color: tokens.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {replyingTo.text || "📎 Attachment"}
+            </div>
+          </div>
+          <button type="button" onClick={onCancelReply}
+            style={{ background: "none", border: "none", cursor: "pointer", color: tokens.textMuted, fontSize: "1rem", flexShrink: 0 }}
+          >✕</button>
+        </div>
+      )}
       {error && (
         <div style={{ color: tokens.danger, padding: "6px 10px", fontSize: "0.85rem" }}>
           {error}
