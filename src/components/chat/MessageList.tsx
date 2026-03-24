@@ -16,17 +16,14 @@ interface Props {
 }
 
 const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMessage, onDeleteMessage, onReplyMessage, onForwardMessage, otherMemberLastReadAt, isGroupChat }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (el) {
-      el.scrollTop = el.scrollHeight;
-    }
+    bottomRef.current?.scrollIntoView({ behavior: "instant" });
   }, [messages]);
 
   return (
-    <div className="message-list" ref={containerRef}>
+    <div className="message-list">
       {messages.map((m) => (
         <div key={m.id} className={`message-row ${m.isMe ? "me" : "them"}`}>
           <MessageBubble
@@ -41,6 +38,7 @@ const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMe
           />
         </div>
       ))}
+      <div ref={bottomRef} />
     </div>
   );
 };
