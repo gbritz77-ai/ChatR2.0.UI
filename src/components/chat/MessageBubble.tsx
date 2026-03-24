@@ -10,7 +10,26 @@ interface Props {
   onDelete?: (messageId: string) => Promise<void>;
   onReply?: (message: Message) => void;
   onForward?: (message: Message) => void;
+  otherMemberLastReadAt?: string | null;
+  isGroupChat?: boolean;
 }
+
+// Tick icons — WhatsApp style
+const SingleTick = () => (
+  <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style={{ display: "inline", verticalAlign: "middle", marginLeft: 4 }}>
+    <path d="M1 5L4.5 8.5L12.5 1" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const DoubleTick = ({ read }: { read: boolean }) => {
+  const color = read ? "#38bdf8" : "rgba(255,255,255,0.5)";
+  return (
+    <svg width="18" height="10" viewBox="0 0 18 10" fill="none" style={{ display: "inline", verticalAlign: "middle", marginLeft: 4 }}>
+      <path d="M1 5L4.5 8.5L12.5 1" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M5 5L8.5 8.5L16.5 1" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+};
 
 const AttachmentItem: React.FC<{
   attachment: MessageAttachment;
@@ -76,7 +95,7 @@ const ReplyQuote: React.FC<{ replyTo: ReplyPreview }> = ({ replyTo }) => (
   </div>
 );
 
-const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit, onDelete, onReply, onForward }) => {
+const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit, onDelete, onReply, onForward, otherMemberLastReadAt, isGroupChat }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.text);
   const [isSaving, setIsSaving] = useState(false);
@@ -263,6 +282,13 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
             ✎ edited
           </span>
         )}
+        {/* Read receipts — only on own messages in direct chats */}
+        {message.isMe && !isGroupChat && (() => {
+          const isTempMessage = message.id.startsWith("temp-");
+          if (isTempMessage) return <SingleTick />;
+          const read = !!(otherMemberLastReadAt && new Date(otherMemberLastReadAt) >= new Date(message.createdAt));
+          return <DoubleTick read={read} />;
+        })()}
       </span>
     </div>
   );

@@ -11,9 +11,11 @@ interface Props {
   onDeleteMessage?: (messageId: string) => Promise<void>;
   onReplyMessage?: (message: Message) => void;
   onForwardMessage?: (message: Message) => void;
+  otherMemberLastReadAt?: string | null;
+  isGroupChat?: boolean;
 }
 
-const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMessage, onDeleteMessage, onReplyMessage, onForwardMessage }) => {
+const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMessage, onDeleteMessage, onReplyMessage, onForwardMessage, otherMemberLastReadAt, isGroupChat }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -34,6 +36,8 @@ const MessageList: React.FC<Props> = ({ messages, onDownloadAttachment, onEditMe
             onDelete={onDeleteMessage}
             onReply={onReplyMessage}
             onForward={onForwardMessage}
+            otherMemberLastReadAt={otherMemberLastReadAt}
+            isGroupChat={isGroupChat}
           />
         </div>
       ))}

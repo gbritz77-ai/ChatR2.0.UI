@@ -15,6 +15,7 @@ export interface Conversation {
   otherUserGroup?: string | null;
   chatAvatarUrl?: string | null;
   availability?: { days: string; from: string; to: string } | null;
+  otherMemberLastReadAt?: string | null;
 }
 
 export interface MessageAttachment {

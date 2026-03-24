@@ -262,6 +262,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     availability: (!dto.isGroup && dto.otherUserAvailabilityDays && dto.otherUserAvailabilityFrom && dto.otherUserAvailabilityTo)
       ? { days: dto.otherUserAvailabilityDays, from: dto.otherUserAvailabilityFrom, to: dto.otherUserAvailabilityTo }
       : null,
+    otherMemberLastReadAt: (dto as any).otherMemberLastReadAt ?? null,
   });
 
   // Map backend ChatMessageDto -> UI Message
@@ -442,6 +443,17 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     connection.on("GroupAvatarUpdated", (data: { chatId: string; avatarUrl: string }) => {
       setConversations((prev) =>
         prev.map((c) => c.id === data.chatId ? { ...c, chatAvatarUrl: data.avatarUrl } : c)
+      );
+    });
+
+    // When the other user reads the chat — update their lastReadAt so our ticks update
+    connection.on("ChatRead", (data: { chatId: string; userId: string; lastReadAt: string }) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === data.chatId && c.otherUserId === data.userId
+            ? { ...c, otherMemberLastReadAt: data.lastReadAt }
+            : c
+        )
       );
     });
 
@@ -959,6 +971,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                 onDeleteMessage={handleDeleteMessage}
                 onReplyMessage={(msg) => setReplyingTo({ ...msg, messageId: msg.id })}
                 onForwardMessage={(msg) => setForwardingMessage(msg)}
+                otherMemberLastReadAt={selectedConversation?.otherMemberLastReadAt ?? null}
+                isGroupChat={selectedConversation?.type === "group"}
               />
               <MessageInput
                 chatId={selectedConversationId}
