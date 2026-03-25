@@ -110,12 +110,17 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const showEmojiPickerRef = useRef(false);
+  showEmojiPickerRef.current = showEmojiPicker;
+
   const handleMouseEnter = () => {
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     setShowActions(true);
   };
   const handleMouseLeave = () => {
-    hideTimeoutRef.current = setTimeout(() => setShowActions(false), 300);
+    hideTimeoutRef.current = setTimeout(() => {
+      if (!showEmojiPickerRef.current) setShowActions(false);
+    }, 300);
   };
 
   useEffect(() => {
@@ -245,7 +250,7 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
                           onClick={() => {
                             void onReact(message.id, emoji);
                             setShowEmojiPicker(false);
-                            setShowActions(false);
+                            setTimeout(() => setShowActions(false), 50);
                           }}
                           style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.25rem", padding: "2px 3px", lineHeight: 1 }}
                         >{emoji}</button>
