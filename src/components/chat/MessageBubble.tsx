@@ -2,8 +2,9 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import type { Message, MessageAttachment, ReplyPreview } from "../../types/chat";
+import EmojiPickerPanel from "./EmojiPicker";
 
-const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "😍", "🥳", "😅", "🤔", "👏"];
 
 interface Props {
   message: Message;
@@ -107,11 +108,14 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showFullEmojiPicker, setShowFullEmojiPicker] = useState(false);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const showEmojiPickerRef = useRef(false);
+  const showFullEmojiPickerRef = useRef(false);
   showEmojiPickerRef.current = showEmojiPicker;
+  showFullEmojiPickerRef.current = showFullEmojiPicker;
 
   const handleMouseEnter = () => {
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
@@ -119,7 +123,7 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
   };
   const handleMouseLeave = () => {
     hideTimeoutRef.current = setTimeout(() => {
-      if (!showEmojiPickerRef.current) setShowActions(false);
+      if (!showEmojiPickerRef.current && !showFullEmojiPickerRef.current) setShowActions(false);
     }, 300);
   };
 
@@ -244,6 +248,7 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
                         display: "flex", gap: 4, background: "rgba(0,0,0,0.75)",
                         borderRadius: 20, padding: "6px 10px", zIndex: 20,
                         boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+                        alignItems: "center",
                       }}>
                       {QUICK_EMOJIS.map(emoji => (
                         <button key={emoji} type="button"
@@ -255,6 +260,24 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
                           style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.25rem", padding: "2px 3px", lineHeight: 1 }}
                         >{emoji}</button>
                       ))}
+                      <button type="button"
+                        onClick={() => { setShowFullEmojiPicker(p => !p); }}
+                        style={{ background: "rgba(255,255,255,0.15)", border: "none", cursor: "pointer", fontSize: "0.85rem", padding: "3px 7px", lineHeight: 1, borderRadius: 12, color: "#fff", fontWeight: 700 }}
+                        title="More emojis"
+                      >+</button>
+                    </div>
+                  )}
+                  {showFullEmojiPicker && (
+                    <div style={{ position: "absolute", top: -380, [message.isMe ? "right" : "left"]: 0, zIndex: 30 }}>
+                      <EmojiPickerPanel
+                        onSelectEmoji={(emoji) => {
+                          if (onReact) void onReact(message.id, emoji);
+                          setShowFullEmojiPicker(false);
+                          setShowEmojiPicker(false);
+                          setTimeout(() => setShowActions(false), 50);
+                        }}
+                        onClose={() => setShowFullEmojiPicker(false)}
+                      />
                     </div>
                   )}
                 </div>
