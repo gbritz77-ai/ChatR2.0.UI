@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { Message, MessageAttachment, ReplyPreview } from "../../types/chat";
 
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+
 interface Props {
   message: Message;
   onDownloadAttachment: (attachmentId: string, chatId: string) => Promise<string>;
@@ -10,6 +12,8 @@ interface Props {
   onDelete?: (messageId: string) => Promise<void>;
   onReply?: (message: Message) => void;
   onForward?: (message: Message) => void;
+  onReact?: (messageId: string, emoji: string) => Promise<void>;
+  currentUserId?: string;
   otherMemberLastReadAt?: string | null;
   isGroupChat?: boolean;
 }
@@ -95,13 +99,14 @@ const ReplyQuote: React.FC<{ replyTo: ReplyPreview }> = ({ replyTo }) => (
   </div>
 );
 
-const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit, onDelete, onReply, onForward, otherMemberLastReadAt, isGroupChat }) => {
+const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit, onDelete, onReply, onForward, onReact, currentUserId, otherMemberLastReadAt, isGroupChat }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.text);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -218,6 +223,37 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
                 [message.isMe ? "right" : "left"]: 0,
                 display: "flex", gap: 4, zIndex: 10,
               }}>
+              {onReact && (
+                <div style={{ position: "relative" }}>
+                  <button type="button" style={actionBtnStyle}
+                    onClick={() => setShowEmojiPicker(p => !p)}
+                    title="React"
+                  >😊</button>
+                  {showEmojiPicker && (
+                    <div
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
+                      style={{
+                        position: "absolute", top: -44,
+                        [message.isMe ? "right" : "left"]: 0,
+                        display: "flex", gap: 4, background: "rgba(0,0,0,0.75)",
+                        borderRadius: 20, padding: "6px 10px", zIndex: 20,
+                        boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+                      }}>
+                      {QUICK_EMOJIS.map(emoji => (
+                        <button key={emoji} type="button"
+                          onClick={() => {
+                            void onReact(message.id, emoji);
+                            setShowEmojiPicker(false);
+                            setShowActions(false);
+                          }}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.25rem", padding: "2px 3px", lineHeight: 1 }}
+                        >{emoji}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {onReply && (
                 <button type="button" style={actionBtnStyle}
                   onClick={() => { onReply(message); setShowActions(false); }}
@@ -284,6 +320,30 @@ const MessageBubble: React.FC<Props> = ({ message, onDownloadAttachment, onEdit,
               >{isDeleting ? "Deleting…" : "Delete"}</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Reaction pills */}
+      {message.reactions && message.reactions.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+          {message.reactions.map(r => {
+            const iReacted = currentUserId ? r.userIds.includes(currentUserId) : false;
+            return (
+              <button key={r.emoji} type="button"
+                onClick={() => onReact && void onReact(message.id, r.emoji)}
+                title={`${r.count} reaction${r.count !== 1 ? "s" : ""}`}
+                style={{
+                  display: "flex", alignItems: "center", gap: 3,
+                  background: iReacted ? "rgba(56,189,248,0.25)" : "rgba(255,255,255,0.12)",
+                  border: iReacted ? "1px solid rgba(56,189,248,0.5)" : "1px solid rgba(255,255,255,0.15)",
+                  borderRadius: 12, padding: "2px 8px", cursor: "pointer",
+                  fontSize: "0.82rem", lineHeight: 1.4,
+                }}>
+                <span>{r.emoji}</span>
+                <span style={{ fontSize: "0.72rem", opacity: 0.85 }}>{r.count}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 

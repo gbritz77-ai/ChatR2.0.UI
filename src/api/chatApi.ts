@@ -304,6 +304,11 @@ export async function deleteMessage(chatId: string, messageId: string, token: st
   await api.delete(`/Chats/${chatId}/messages/${messageId}`);
 }
 
+export async function toggleReaction(chatId: string, messageId: string, emoji: string, token: string): Promise<void> {
+  applyToken(token);
+  await api.post(`/Chats/${chatId}/messages/${messageId}/reactions`, { emoji });
+}
+
 export async function deleteGroup(chatId: string, token: string): Promise<void> {
   applyToken(token);
   await api.delete(`/Chats/${chatId}`);

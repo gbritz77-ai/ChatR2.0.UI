@@ -30,6 +30,12 @@ export interface ReplyPreview {
   text: string;
 }
 
+export interface MessageReaction {
+  emoji: string;
+  count: number;
+  userIds: string[];
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -43,6 +49,7 @@ export interface Message {
   isEdited?: boolean;
   editedAt?: string;
   replyTo?: ReplyPreview;
+  reactions?: MessageReaction[];
 }
 export type ChatAttachment = {
   attachmentId: string;

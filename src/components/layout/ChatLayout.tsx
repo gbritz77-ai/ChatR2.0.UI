@@ -24,6 +24,7 @@ import {
   deleteGroup,
   updateGroupAvatar,
   getGroupAvatarUploadUrl,
+  toggleReaction,
   type ChatDto,
   type ChatMessageDto,
   type ChatUserDto,
@@ -285,6 +286,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       isEdited: (dto as any).isEdited,
       editedAt: (dto as any).editedAt,
       replyTo: (dto as any).replyTo ?? undefined,
+      reactions: (dto as any).reactions ?? [],
     };
   };
 
@@ -433,6 +435,12 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
     connection.on("MessageDeleted", (data: { messageId: string }) => {
       setMessages((prev) => prev.filter((m) => m.id !== data.messageId));
+    });
+
+    connection.on("ReactionUpdated", (data: { messageId: string; reactions: { emoji: string; count: number; userIds: string[] }[] }) => {
+      setMessages((prev) =>
+        prev.map((m) => m.id === data.messageId ? { ...m, reactions: data.reactions } : m)
+      );
     });
 
     connection.on("GroupDeleted", (data: { chatId: string }) => {
@@ -687,6 +695,11 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     if (!selectedConversationId) return;
     await deleteMessage(selectedConversationId, messageId, authToken);
     setMessages((prev) => prev.filter((m) => m.id !== messageId));
+  };
+
+  const handleToggleReaction = async (messageId: string, emoji: string) => {
+    if (!selectedConversationId) return;
+    await toggleReaction(selectedConversationId, messageId, emoji, authToken);
   };
 
   const handleDeleteGroup = async (chatId: string) => {
@@ -972,6 +985,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                 onDeleteMessage={handleDeleteMessage}
                 onReplyMessage={(msg) => setReplyingTo({ ...msg, messageId: msg.id })}
                 onForwardMessage={(msg) => setForwardingMessage(msg)}
+                onReactMessage={handleToggleReaction}
+                currentUserId={currentUserId}
                 otherMemberLastReadAt={selectedConversation?.otherMemberLastReadAt ?? null}
                 isGroupChat={selectedConversation?.type === "group"}
               />
