@@ -499,20 +499,26 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     });
 
     connection.on("CallAccepted", async (data: { callId: string; participants: { userId: string; connectionId: string }[] }) => {
-      // We just joined — create peer connections to existing participants and send offers
+      console.log("[Call] CallAccepted — participants:", data.participants);
       for (const p of data.participants) {
-        const pc = webRTC.createPeerConnection(
-          p.connectionId, p.userId, data.callId,
-          (rs) => setRemoteStreams((prev) => [...prev.filter((s) => s.connectionId !== rs.connectionId), rs]),
-        );
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        connection.invoke("SendOffer", data.callId, p.connectionId, offer).catch(() => {});
+        try {
+          const pc = webRTC.createPeerConnection(
+            p.connectionId, p.userId, data.callId,
+            (rs) => setRemoteStreams((prev) => [...prev.filter((s) => s.connectionId !== rs.connectionId), rs]),
+          );
+          console.log("[Call] Creating offer for", p.connectionId);
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          console.log("[Call] Sending offer to", p.connectionId);
+          await connection.invoke("SendOffer", data.callId, p.connectionId, offer);
+        } catch (e) {
+          console.error("[Call] CallAccepted error:", e);
+        }
       }
     });
 
     connection.on("UserJoinedCall", async (data: { callId: string; userId: string; connectionId: string }) => {
-      // A new user joined — they will send us an offer, so just create the peer connection ready
+      console.log("[Call] UserJoinedCall:", data);
       webRTC.createPeerConnection(
         data.connectionId, data.userId, data.callId,
         (rs) => setRemoteStreams((prev) => [...prev.filter((s) => s.connectionId !== rs.connectionId), rs]),
@@ -520,27 +526,38 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     });
 
     connection.on("ReceiveOffer", async (data: { callId: string; fromConnectionId: string; offer: RTCSessionDescriptionInit }) => {
-      let pc = webRTC.peerConnections.current.get(data.fromConnectionId);
-      if (!pc) {
-        pc = webRTC.createPeerConnection(
-          data.fromConnectionId, data.fromConnectionId, data.callId,
-          (rs) => setRemoteStreams((prev) => [...prev.filter((s) => s.connectionId !== rs.connectionId), rs]),
-        );
+      console.log("[Call] ReceiveOffer from", data.fromConnectionId);
+      try {
+        let pc = webRTC.peerConnections.current.get(data.fromConnectionId);
+        if (!pc) {
+          console.log("[Call] No existing PC — creating one");
+          pc = webRTC.createPeerConnection(
+            data.fromConnectionId, data.fromConnectionId, data.callId,
+            (rs) => setRemoteStreams((prev) => [...prev.filter((s) => s.connectionId !== rs.connectionId), rs]),
+          );
+        }
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        console.log("[Call] Sending answer to", data.fromConnectionId);
+        await connection.invoke("SendAnswer", data.callId, data.fromConnectionId, answer);
+      } catch (e) {
+        console.error("[Call] ReceiveOffer error:", e);
       }
-      await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      connection.invoke("SendAnswer", data.callId, data.fromConnectionId, answer).catch(() => {});
     });
 
     connection.on("ReceiveAnswer", async (data: { callId: string; fromConnectionId: string; answer: RTCSessionDescriptionInit }) => {
+      console.log("[Call] ReceiveAnswer from", data.fromConnectionId);
       const pc = webRTC.peerConnections.current.get(data.fromConnectionId);
-      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch((e) => console.error("[Call] setRemoteDescription answer error:", e));
+      else console.warn("[Call] ReceiveAnswer — no PC found for", data.fromConnectionId);
     });
 
     connection.on("ReceiveIceCandidate", async (data: { callId: string; fromConnectionId: string; candidate: RTCIceCandidateInit }) => {
+      console.log("[Call] ReceiveIceCandidate from", data.fromConnectionId);
       const pc = webRTC.peerConnections.current.get(data.fromConnectionId);
       if (pc) await pc.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(() => {});
+      else console.warn("[Call] ReceiveIceCandidate — no PC found for", data.fromConnectionId);
     });
 
     connection.on("CallRejected", () => {
