@@ -4,6 +4,7 @@ import type { RemoteStream } from "../../hooks/useWebRTC";
 
 interface Props {
   callId: string;
+  calleeName?: string;
   localStream: MediaStream | null;
   remoteStreams: RemoteStream[];
   isMuted: boolean;
@@ -57,7 +58,8 @@ const VideoTile: React.FC<{ stream: MediaStream; muted?: boolean; label?: string
 };
 
 const VideoCallModal: React.FC<Props> = ({
-  callId,
+  callId: _callId,
+  calleeName,
   localStream,
   remoteStreams,
   isMuted,
@@ -69,12 +71,61 @@ const VideoCallModal: React.FC<Props> = ({
 }) => {
   const { tokens } = useTheme();
   const [elapsed, setElapsed] = useState(0);
+  const [dots, setDots] = useState(".");
+  const ringCtxRef = useRef<AudioContext | null>(null);
+  const ringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isRinging = remoteStreams.length === 0;
 
-  // Call timer
+  // Animated dots
   useEffect(() => {
+    if (!isRinging) return;
+    const t = setInterval(() => setDots((d) => (d.length >= 3 ? "." : d + ".")), 500);
+    return () => clearInterval(t);
+  }, [isRinging]);
+
+  // Ringing tone (two beeps every 3 seconds)
+  useEffect(() => {
+    if (!isRinging) {
+      if (ringIntervalRef.current) clearInterval(ringIntervalRef.current);
+      ringCtxRef.current?.close().catch(() => {});
+      ringCtxRef.current = null;
+      return;
+    }
+
+    const playRingTone = () => {
+      try {
+        const ctx = new AudioContext();
+        ringCtxRef.current = ctx;
+        const beep = (startTime: number) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(480, startTime);
+          gain.gain.setValueAtTime(0.3, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4);
+          osc.start(startTime);
+          osc.stop(startTime + 0.4);
+        };
+        beep(ctx.currentTime);
+        beep(ctx.currentTime + 0.5);
+      } catch { /* audio blocked */ }
+    };
+
+    playRingTone();
+    ringIntervalRef.current = setInterval(playRingTone, 3000);
+    return () => {
+      if (ringIntervalRef.current) clearInterval(ringIntervalRef.current);
+      ringCtxRef.current?.close().catch(() => {});
+    };
+  }, [isRinging]);
+
+  // Call timer — only starts once someone joins
+  useEffect(() => {
+    if (isRinging) return;
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [isRinging]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -133,8 +184,12 @@ const VideoCallModal: React.FC<Props> = ({
           color: "#fff",
         }}
       >
-        <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>Call ID: {callId.slice(0, 8)}</div>
-        <div style={{ fontSize: "1rem", fontWeight: 600, opacity: 0.9 }}>{formatTime(elapsed)}</div>
+        <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>
+          {calleeName ?? "Call"}
+        </div>
+        <div style={{ fontSize: "1rem", fontWeight: 600, opacity: 0.9 }}>
+          {isRinging ? "Ringing…" : formatTime(elapsed)}
+        </div>
       </div>
 
       {/* Video grid */}
@@ -153,19 +208,41 @@ const VideoCallModal: React.FC<Props> = ({
           <VideoTile key={rs.connectionId} stream={rs.stream} label={rs.userId.slice(0, 8)} />
         ))}
 
-        {/* If no remote yet, show waiting message */}
+        {/* Ringing / waiting state */}
         {remoteStreams.length === 0 && (
           <div
             style={{
               flex: 1,
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              color: "rgba(255,255,255,0.5)",
-              fontSize: "0.9rem",
+              gap: 16,
+              color: "rgba(255,255,255,0.7)",
             }}
           >
-            Waiting for others to join…
+            {/* Pulsing avatar ring */}
+            <div style={{
+              width: 80, height: 80, borderRadius: "50%",
+              background: "rgba(255,255,255,0.1)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 36,
+              animation: "pulse-ring 1.5s ease-in-out infinite",
+            }}>
+              📞
+            </div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 600 }}>
+              {calleeName ? `Calling ${calleeName}` : "Calling…"}
+            </div>
+            <div style={{ fontSize: "0.85rem", opacity: 0.6 }}>
+              Ringing{dots}
+            </div>
+            <style>{`
+              @keyframes pulse-ring {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.25); }
+                50% { box-shadow: 0 0 0 20px rgba(255,255,255,0); }
+              }
+            `}</style>
           </div>
         )}
       </div>

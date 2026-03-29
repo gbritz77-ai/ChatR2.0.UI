@@ -141,7 +141,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
   // ─── Video Call State ────────────────────────────────────────────────────────
   const [incomingCall, setIncomingCall] = useState<{ callId: string; callerName: string } | null>(null);
-  const [activeCall, setActiveCall] = useState<{ callId: string } | null>(null);
+  const [activeCall, setActiveCall] = useState<{ callId: string; calleeName?: string } | null>(null);
   const activeCallIdRef = useRef<string>("");  // always up-to-date callId for callbacks
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([]);
@@ -703,7 +703,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       const stream = await webRTC.getLocalStream();
       setLocalStream(stream);
       // Show the call UI immediately; callId arrives via CallCreated event
-      setActiveCall({ callId: "" });
+      const calleeName = conversations.find((c) => c.otherUserId === targetUserId)?.name;
+      setActiveCall({ callId: "", calleeName });
       await conn.invoke("CallUser", targetUserId, chatId ?? null);
     } catch (e) {
       console.error("Failed to start call", e);
@@ -1043,6 +1044,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       {activeCall && (
         <VideoCallModal
           callId={activeCall.callId}
+          calleeName={activeCall.calleeName}
           localStream={localStream}
           remoteStreams={remoteStreams}
           isMuted={isMuted}
