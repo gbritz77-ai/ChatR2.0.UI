@@ -147,7 +147,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
-  const webRTC = useWebRTC(connectionRef.current);
+  const webRTC = useWebRTC(connectionRef);
 
   // Mobile responsive state
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);

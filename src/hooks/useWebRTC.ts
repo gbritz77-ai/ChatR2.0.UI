@@ -12,7 +12,8 @@ export interface RemoteStream {
   stream: MediaStream;
 }
 
-export function useWebRTC(connection: HubConnection | null) {
+// Takes a ref so it always reads the current connection, even after reconnects
+export function useWebRTC(connectionRef: React.MutableRefObject<HubConnection | null>) {
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localStream = useRef<MediaStream | null>(null);
 
@@ -47,14 +48,15 @@ export function useWebRTC(connection: HubConnection | null) {
         });
       }
 
-      // Relay ICE candidates via SignalR
+      // Relay ICE candidates — always reads current connection via ref
       pc.onicecandidate = (e) => {
-        if (e.candidate && connection) {
-          connection.invoke("SendIceCandidate", callId, connectionId, e.candidate).catch(() => {});
+        if (e.candidate && connectionRef.current) {
+          connectionRef.current
+            .invoke("SendIceCandidate", callId, connectionId, e.candidate)
+            .catch(() => {});
         }
       };
 
-      // Receive remote video/audio
       pc.ontrack = (e) => {
         onRemoteStream({ connectionId, userId, stream: e.streams[0] });
       };
@@ -66,7 +68,7 @@ export function useWebRTC(connection: HubConnection | null) {
       peerConnections.current.set(connectionId, pc);
       return pc;
     },
-    [connection]
+    [connectionRef]
   );
 
   const closePeerConnection = useCallback((connectionId: string) => {
