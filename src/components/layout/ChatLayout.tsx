@@ -142,6 +142,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   // ─── Video Call State ────────────────────────────────────────────────────────
   const [incomingCall, setIncomingCall] = useState<{ callId: string; callerName: string } | null>(null);
   const [activeCall, setActiveCall] = useState<{ callId: string } | null>(null);
+  const activeCallIdRef = useRef<string>("");  // always up-to-date callId for callbacks
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([]);
   const [isMuted, setIsMuted] = useState(false);
@@ -488,6 +489,11 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     });
 
     // ─── Video Call Events ───────────────────────────────────────────────────
+    connection.on("CallCreated", (data: { callId: string }) => {
+      activeCallIdRef.current = data.callId;
+      setActiveCall({ callId: data.callId });
+    });
+
     connection.on("IncomingCall", (data: { callId: string; callerName: string }) => {
       setIncomingCall({ callId: data.callId, callerName: data.callerName });
     });
@@ -679,10 +685,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     try {
       const stream = await webRTC.getLocalStream();
       setLocalStream(stream);
+      // Show the call UI immediately; callId arrives via CallCreated event
+      setActiveCall({ callId: "" });
       await conn.invoke("CallUser", targetUserId, chatId ?? null);
-      setActiveCall({ callId: "" }); // callId filled in via CallAccepted
     } catch (e) {
       console.error("Failed to start call", e);
+      setActiveCall(null);
+      webRTC.stopLocalStream();
+      setLocalStream(null);
     }
   }, [webRTC]);
 
@@ -693,6 +703,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     try {
       const stream = await webRTC.getLocalStream();
       setLocalStream(stream);
+      activeCallIdRef.current = incomingCall.callId;
       setActiveCall({ callId: incomingCall.callId });
       setIncomingCall(null);
       await conn.invoke("AcceptCall", incomingCall.callId);
@@ -711,16 +722,17 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   }, [incomingCall]);
 
   const handleHangUp = useCallback(async () => {
-    if (!activeCall?.callId) return;
+    const callId = activeCallIdRef.current;
     const conn = connectionRef.current;
     try {
-      await conn?.invoke("HangUp", activeCall.callId);
+      if (callId) await conn?.invoke("HangUp", callId);
     } catch { /* ignore */ }
+    activeCallIdRef.current = "";
     setActiveCall(null);
     webRTC.closeAllConnections();
     setRemoteStreams([]);
     setLocalStream(null);
-  }, [activeCall, webRTC]);
+  }, [webRTC]);
 
   const handleToggleMute = useCallback(() => {
     if (webRTC.localStream.current) {
