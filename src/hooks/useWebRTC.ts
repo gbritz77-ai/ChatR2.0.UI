@@ -4,6 +4,10 @@ import type { HubConnection } from "@microsoft/signalr";
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
+  // Public TURN relay — replace with a dedicated TURN server for production
+  { urls: "turn:openrelay.metered.ca:80",  username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
 ];
 
 export interface RemoteStream {
@@ -57,11 +61,19 @@ export function useWebRTC(connectionRef: React.MutableRefObject<HubConnection | 
         }
       };
 
+      // Build a stable MediaStream from incoming tracks
+      const remoteStream = new MediaStream();
       pc.ontrack = (e) => {
-        onRemoteStream({ connectionId, userId, stream: e.streams[0] });
+        remoteStream.addTrack(e.track);
+        onRemoteStream({ connectionId, userId, stream: remoteStream });
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        console.log(`[WebRTC] ICE state (${connectionId.slice(0, 6)}):`, pc.iceConnectionState);
       };
 
       pc.onconnectionstatechange = () => {
+        console.log(`[WebRTC] Connection state (${connectionId.slice(0, 6)}):`, pc.connectionState);
         onConnectionStateChange?.(connectionId, pc.connectionState);
       };
 
