@@ -82,26 +82,34 @@ const VideoCallModal: React.FC<Props> = ({
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
-  const controlBtn = (onClick: () => void, icon: string, active: boolean, danger = false) => (
-    <button
-      onClick={onClick}
-      style={{
-        width: 52,
-        height: 52,
-        borderRadius: "50%",
-        border: "none",
-        background: danger ? "#ef4444" : active ? tokens.accent : "rgba(255,255,255,0.15)",
-        color: "#fff",
-        fontSize: 20,
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transition: "background 0.15s",
-      }}
-    >
-      {icon}
-    </button>
+  const controlBtn = (onClick: () => void, icon: string, active: boolean, danger = false, tooltip = "") => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+      <button
+        onClick={onClick}
+        title={tooltip}
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: "50%",
+          border: "none",
+          background: danger ? "#ef4444" : active ? tokens.accent : "rgba(255,255,255,0.15)",
+          color: "#fff",
+          fontSize: 20,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "background 0.15s",
+        }}
+      >
+        {icon}
+      </button>
+      {tooltip && (
+        <span style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.5)", whiteSpace: "nowrap" }}>
+          {tooltip}
+        </span>
+      )}
+    </div>
   );
 
   return (
@@ -191,10 +199,10 @@ const VideoCallModal: React.FC<Props> = ({
           gap: 16,
         }}
       >
-        {controlBtn(onToggleMute, isMuted ? "🔇" : "🎙️", !isMuted)}
-        {controlBtn(onToggleCamera, isCameraOff ? "📷" : "📹", !isCameraOff)}
-        {onInvite && controlBtn(onInvite, "➕", false)}
-        {controlBtn(onHangUp, "📵", false, true)}
+        {controlBtn(onToggleMute, isMuted ? "🔇" : "🎙️", !isMuted, false, isMuted ? "Unmute" : "Mute")}
+        {controlBtn(onToggleCamera, isCameraOff ? "📷" : "📹", !isCameraOff, false, isCameraOff ? "Turn camera on" : "Turn camera off")}
+        {onInvite && controlBtn(onInvite, "➕", false, false, "Invite someone")}
+        {controlBtn(onHangUp, "📵", false, true, "End call")}
       </div>
     </div>
   );
