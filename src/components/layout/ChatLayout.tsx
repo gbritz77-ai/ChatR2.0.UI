@@ -1,6 +1,6 @@
 // src/components/layout/ChatLayout.tsx
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as signalR from "@microsoft/signalr";
 import ConversationList from "../chat/ConversationList";
 import ChatHeader from "../chat/ChatHeader";
@@ -8,6 +8,9 @@ import MessageList from "../chat/MessageList";
 import MessageInput from "../chat/MessageInput";
 import GroupCreation from "../chat/GroupCreation";
 import GroupMembers from "../chat/GroupMembers";
+import IncomingCallModal from "../call/IncomingCallModal";
+import VideoCallModal from "../call/VideoCallModal";
+import { useWebRTC, type RemoteStream } from "../../hooks/useWebRTC";
 import type { Conversation, Message } from "../../types/chat";
 import {
   getChats,
@@ -135,6 +138,15 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   // Reply / Forward state
   const [replyingTo, setReplyingTo] = useState<(Message & { messageId: string }) | null>(null);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+
+  // ─── Video Call State ────────────────────────────────────────────────────────
+  const [incomingCall, setIncomingCall] = useState<{ callId: string; callerName: string } | null>(null);
+  const [activeCall, setActiveCall] = useState<{ callId: string } | null>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCameraOff, setIsCameraOff] = useState(false);
+  const webRTC = useWebRTC(connectionRef.current);
 
   // Mobile responsive state
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
@@ -475,6 +487,75 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       }
     });
 
+    // ─── Video Call Events ───────────────────────────────────────────────────
+    connection.on("IncomingCall", (data: { callId: string; callerName: string }) => {
+      setIncomingCall({ callId: data.callId, callerName: data.callerName });
+    });
+
+    connection.on("CallAccepted", async (data: { callId: string; participants: { userId: string; connectionId: string }[] }) => {
+      // We just joined — create peer connections to existing participants and send offers
+      for (const p of data.participants) {
+        const pc = webRTC.createPeerConnection(
+          p.connectionId, p.userId, data.callId,
+          (rs) => setRemoteStreams((prev) => [...prev.filter((s) => s.connectionId !== rs.connectionId), rs]),
+        );
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        connection.invoke("SendOffer", data.callId, p.connectionId, offer).catch(() => {});
+      }
+    });
+
+    connection.on("UserJoinedCall", async (data: { callId: string; userId: string; connectionId: string }) => {
+      // A new user joined — they will send us an offer, so just create the peer connection ready
+      webRTC.createPeerConnection(
+        data.connectionId, data.userId, data.callId,
+        (rs) => setRemoteStreams((prev) => [...prev.filter((s) => s.connectionId !== rs.connectionId), rs]),
+      );
+    });
+
+    connection.on("ReceiveOffer", async (data: { callId: string; fromConnectionId: string; offer: RTCSessionDescriptionInit }) => {
+      let pc = webRTC.peerConnections.current.get(data.fromConnectionId);
+      if (!pc) {
+        pc = webRTC.createPeerConnection(
+          data.fromConnectionId, data.fromConnectionId, data.callId,
+          (rs) => setRemoteStreams((prev) => [...prev.filter((s) => s.connectionId !== rs.connectionId), rs]),
+        );
+      }
+      await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      connection.invoke("SendAnswer", data.callId, data.fromConnectionId, answer).catch(() => {});
+    });
+
+    connection.on("ReceiveAnswer", async (data: { callId: string; fromConnectionId: string; answer: RTCSessionDescriptionInit }) => {
+      const pc = webRTC.peerConnections.current.get(data.fromConnectionId);
+      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    });
+
+    connection.on("ReceiveIceCandidate", async (data: { callId: string; fromConnectionId: string; candidate: RTCIceCandidateInit }) => {
+      const pc = webRTC.peerConnections.current.get(data.fromConnectionId);
+      if (pc) await pc.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(() => {});
+    });
+
+    connection.on("CallRejected", () => {
+      setActiveCall(null);
+      setIncomingCall(null);
+      webRTC.closeAllConnections();
+      setRemoteStreams([]);
+      setLocalStream(null);
+    });
+
+    connection.on("UserLeftCall", (data: { userId: string; callId: string }) => {
+      setRemoteStreams((prev) => prev.filter((s) => s.userId !== data.userId));
+    });
+
+    connection.on("CallEnded", () => {
+      setActiveCall(null);
+      webRTC.closeAllConnections();
+      setRemoteStreams([]);
+      setLocalStream(null);
+    });
+
     // Re-join all groups after automatic reconnection (server drops group membership on disconnect)
     connection.onreconnected(() => {
       console.log("[SignalR] Reconnected — rejoining chat groups");
@@ -590,6 +671,70 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     if (isMobile) setSidebarOpen(false);
   };
   selectConversationRef.current = handleSelectConversation;
+
+  // ─── Video Call Handlers ─────────────────────────────────────────────────────
+  const handleStartCall = useCallback(async (targetUserId: string, chatId?: string) => {
+    const conn = connectionRef.current;
+    if (!conn || conn.state !== signalR.HubConnectionState.Connected) return;
+    try {
+      const stream = await webRTC.getLocalStream();
+      setLocalStream(stream);
+      await conn.invoke("CallUser", targetUserId, chatId ?? null);
+      setActiveCall({ callId: "" }); // callId filled in via CallAccepted
+    } catch (e) {
+      console.error("Failed to start call", e);
+    }
+  }, [webRTC]);
+
+  const handleAcceptCall = useCallback(async () => {
+    if (!incomingCall) return;
+    const conn = connectionRef.current;
+    if (!conn) return;
+    try {
+      const stream = await webRTC.getLocalStream();
+      setLocalStream(stream);
+      setActiveCall({ callId: incomingCall.callId });
+      setIncomingCall(null);
+      await conn.invoke("AcceptCall", incomingCall.callId);
+    } catch (e) {
+      console.error("Failed to accept call", e);
+    }
+  }, [incomingCall, webRTC]);
+
+  const handleRejectCall = useCallback(async () => {
+    if (!incomingCall) return;
+    const conn = connectionRef.current;
+    try {
+      await conn?.invoke("RejectCall", incomingCall.callId);
+    } catch { /* ignore */ }
+    setIncomingCall(null);
+  }, [incomingCall]);
+
+  const handleHangUp = useCallback(async () => {
+    if (!activeCall?.callId) return;
+    const conn = connectionRef.current;
+    try {
+      await conn?.invoke("HangUp", activeCall.callId);
+    } catch { /* ignore */ }
+    setActiveCall(null);
+    webRTC.closeAllConnections();
+    setRemoteStreams([]);
+    setLocalStream(null);
+  }, [activeCall, webRTC]);
+
+  const handleToggleMute = useCallback(() => {
+    if (webRTC.localStream.current) {
+      webRTC.localStream.current.getAudioTracks().forEach((t) => { t.enabled = !t.enabled; });
+      setIsMuted((v) => !v);
+    }
+  }, [webRTC]);
+
+  const handleToggleCamera = useCallback(() => {
+    if (webRTC.localStream.current) {
+      webRTC.localStream.current.getVideoTracks().forEach((t) => { t.enabled = !t.enabled; });
+      setIsCameraOff((v) => !v);
+    }
+  }, [webRTC]);
 
   // Load users for "Start private chat" panel
   useEffect(() => {
@@ -858,6 +1003,27 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       </div>
 
       {/* Forward message modal — outside topbar so position:fixed works from viewport */}
+      {/* ─── Video Call Modals ─────────────────────────────────────────────── */}
+      {incomingCall && !activeCall && (
+        <IncomingCallModal
+          callerName={incomingCall.callerName}
+          onAccept={handleAcceptCall}
+          onReject={handleRejectCall}
+        />
+      )}
+      {activeCall && (
+        <VideoCallModal
+          callId={activeCall.callId}
+          localStream={localStream}
+          remoteStreams={remoteStreams}
+          isMuted={isMuted}
+          isCameraOff={isCameraOff}
+          onToggleMute={handleToggleMute}
+          onToggleCamera={handleToggleCamera}
+          onHangUp={handleHangUp}
+        />
+      )}
+
       {forwardingMessage && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ background: tokens.bgCard, borderRadius: 14, padding: "20px 24px", minWidth: 300, maxWidth: 400, width: "90%", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
@@ -959,12 +1125,33 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                   ← Back
                 </button>
               )}
-              <ChatHeader
-                conversation={selectedConversation}
-                currentUserId={currentUserId}
-                onDeleteGroup={handleDeleteGroup}
-                onUpdateGroupPhoto={handleUpdateGroupPhoto}
-              />
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <ChatHeader
+                    conversation={selectedConversation}
+                    currentUserId={currentUserId}
+                    onDeleteGroup={handleDeleteGroup}
+                    onUpdateGroupPhoto={handleUpdateGroupPhoto}
+                  />
+                </div>
+                {selectedConversation.type === "direct" && selectedConversation.otherUserId && (
+                  <button
+                    onClick={() => handleStartCall(selectedConversation.otherUserId!, selectedConversation.id)}
+                    title="Start video call"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 22,
+                      padding: "0 14px",
+                      color: tokens.textMuted,
+                      flexShrink: 0,
+                    }}
+                  >
+                    📹
+                  </button>
+                )}
+              </div>
 
               {selectedConversation.type === "group" && (
                 <GroupMembersPanel
