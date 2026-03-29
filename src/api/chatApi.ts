@@ -309,6 +309,12 @@ export async function toggleReaction(chatId: string, messageId: string, emoji: s
   await api.post(`/Chats/${chatId}/messages/${messageId}/reactions`, { emoji });
 }
 
+export async function getTurnCredentials(token: string): Promise<RTCIceServer[]> {
+  applyToken(token);
+  const res = await api.get<RTCIceServer[]>("/Calls/turn-credentials");
+  return res.data;
+}
+
 export async function deleteGroup(chatId: string, token: string): Promise<void> {
   applyToken(token);
   await api.delete(`/Chats/${chatId}`);

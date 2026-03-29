@@ -28,6 +28,7 @@ import {
   updateGroupAvatar,
   getGroupAvatarUploadUrl,
   toggleReaction,
+  getTurnCredentials,
   type ChatDto,
   type ChatMessageDto,
   type ChatUserDto,
@@ -700,9 +701,16 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     const conn = connectionRef.current;
     if (!conn || conn.state !== signalR.HubConnectionState.Connected) return;
     try {
+      // Fetch fresh TURN credentials from backend before starting
+      try {
+        const turnServers = await getTurnCredentials(authToken);
+        console.log("[Call] TURN credentials fetched:", turnServers.length, "servers");
+        webRTC.setIceServers(turnServers);
+      } catch (e) {
+        console.warn("[Call] Could not fetch TURN credentials, using STUN only:", e);
+      }
       const stream = await webRTC.getLocalStream();
       setLocalStream(stream);
-      // Show the call UI immediately; callId arrives via CallCreated event
       const calleeName = conversations.find((c) => c.otherUserId === targetUserId)?.name;
       setActiveCall({ callId: "", calleeName });
       await conn.invoke("CallUser", targetUserId, chatId ?? null);
@@ -712,13 +720,17 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       webRTC.stopLocalStream();
       setLocalStream(null);
     }
-  }, [webRTC]);
+  }, [webRTC, authToken, conversations]);
 
   const handleAcceptCall = useCallback(async () => {
     if (!incomingCall) return;
     const conn = connectionRef.current;
     if (!conn) return;
     try {
+      try {
+        const turnServers = await getTurnCredentials(authToken);
+        webRTC.setIceServers(turnServers);
+      } catch { /* fall back to STUN */ }
       const stream = await webRTC.getLocalStream();
       setLocalStream(stream);
       activeCallIdRef.current = incomingCall.callId;
@@ -728,7 +740,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     } catch (e) {
       console.error("Failed to accept call", e);
     }
-  }, [incomingCall, webRTC]);
+  }, [incomingCall, webRTC, authToken]);
 
   const handleRejectCall = useCallback(async () => {
     if (!incomingCall) return;

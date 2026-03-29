@@ -1,13 +1,9 @@
 import { useRef, useCallback } from "react";
 import type { HubConnection } from "@microsoft/signalr";
 
-const ICE_SERVERS: RTCIceServer[] = [
+const FALLBACK_ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
-  // Public TURN relay — replace with a dedicated TURN server for production
-  { urls: "turn:openrelay.metered.ca:80",  username: "openrelayproject", credential: "openrelayproject" },
-  { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
-  { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
 ];
 
 export interface RemoteStream {
@@ -20,6 +16,11 @@ export interface RemoteStream {
 export function useWebRTC(connectionRef: React.MutableRefObject<HubConnection | null>) {
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localStream = useRef<MediaStream | null>(null);
+  const iceServersRef = useRef<RTCIceServer[]>(FALLBACK_ICE_SERVERS);
+
+  const setIceServers = useCallback((servers: RTCIceServer[]) => {
+    iceServersRef.current = servers.length > 0 ? servers : FALLBACK_ICE_SERVERS;
+  }, []);
 
   const getLocalStream = useCallback(async (video = true, audio = true) => {
     if (!localStream.current) {
@@ -43,7 +44,8 @@ export function useWebRTC(connectionRef: React.MutableRefObject<HubConnection | 
       onRemoteStream: (s: RemoteStream) => void,
       onConnectionStateChange?: (connectionId: string, state: RTCPeerConnectionState) => void
     ) => {
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
+      console.log("[WebRTC] Using ICE servers:", iceServersRef.current.map((s) => s.urls));
 
       // Add local tracks
       if (localStream.current) {
@@ -100,6 +102,7 @@ export function useWebRTC(connectionRef: React.MutableRefObject<HubConnection | 
   return {
     getLocalStream,
     stopLocalStream,
+    setIceServers,
     createPeerConnection,
     closePeerConnection,
     closeAllConnections,
