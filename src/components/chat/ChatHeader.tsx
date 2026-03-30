@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import type { Conversation } from "../../types/chat";
 import { useTheme } from "../../context/ThemeContext";
+import ConfirmModal from "../ui/ConfirmModal";
 
 interface Props {
   conversation: Conversation;
@@ -12,6 +13,7 @@ interface Props {
 const ChatHeader: React.FC<Props> = ({ conversation, currentUserId, onDeleteGroup, onUpdateGroupPhoto }) => {
   const { tokens } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isGroupCreator =
@@ -20,9 +22,7 @@ const ChatHeader: React.FC<Props> = ({ conversation, currentUserId, onDeleteGrou
 
   const handleDeleteClick = () => {
     setMenuOpen(false);
-    if (window.confirm(`Delete "${conversation.name}"? This cannot be undone.`)) {
-      onDeleteGroup(conversation.id);
-    }
+    setShowDeleteConfirm(true);
   };
 
   const handlePhotoClick = () => {
@@ -124,6 +124,17 @@ const ChatHeader: React.FC<Props> = ({ conversation, currentUserId, onDeleteGrou
             onChange={handleFileChange}
           />
         </div>
+      )}
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title="Delete group"
+          message={`Delete "${conversation.name}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => { setShowDeleteConfirm(false); onDeleteGroup(conversation.id); }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       )}
     </header>
   );

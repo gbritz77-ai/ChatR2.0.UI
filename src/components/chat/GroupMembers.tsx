@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getGroupMembers, addGroupMember, removeGroupMember, searchUsers, type ChatUserDto } from "../../api/chatApi";
 import { useTheme } from "../../context/ThemeContext";
+import ConfirmModal from "../ui/ConfirmModal";
 
 interface Props {
   chatId: string;
@@ -28,6 +29,7 @@ const GroupMembers: React.FC<Props> = ({
   const [userResults, setUserResults] = useState<ChatUserDto[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<ChatUserDto | null>(null);
 
 
   useEffect(() => {
@@ -98,7 +100,6 @@ const GroupMembers: React.FC<Props> = ({
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!window.confirm("Remove this member?")) return;
 
     if (!memberId) {
       setError("Invalid member id");
@@ -122,6 +123,7 @@ const GroupMembers: React.FC<Props> = ({
   };
 
   return (
+    <>
     <div
       style={{
         padding: "12px",
@@ -273,7 +275,7 @@ const GroupMembers: React.FC<Props> = ({
               {member.username !== currentUserName && (
                 <button
                   type="button"
-                  onClick={() => handleRemoveMember(member.id)}
+                  onClick={() => setMemberToRemove(member)}
                   disabled={isLoading}
                   style={{
                     background: "none",
@@ -293,6 +295,18 @@ const GroupMembers: React.FC<Props> = ({
         </div>
       )}
     </div>
+
+    {memberToRemove && (
+      <ConfirmModal
+        title="Remove member"
+        message={`Remove ${memberToRemove.username} from this group?`}
+        confirmLabel="Remove"
+        danger
+        onConfirm={() => { handleRemoveMember(memberToRemove.id); setMemberToRemove(null); }}
+        onCancel={() => setMemberToRemove(null)}
+      />
+    )}
+    </>
   );
 };
 
