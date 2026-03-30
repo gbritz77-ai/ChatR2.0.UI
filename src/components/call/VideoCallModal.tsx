@@ -9,6 +9,7 @@ interface Props {
   remoteStreams: RemoteStream[];
   isMuted: boolean;
   isCameraOff: boolean;
+  pendingInvitees?: { userId: string; name: string }[];
   onToggleMute: () => void;
   onToggleCamera: () => void;
   onHangUp: () => void;
@@ -64,6 +65,7 @@ const VideoCallModal: React.FC<Props> = ({
   remoteStreams,
   isMuted,
   isCameraOff,
+  pendingInvitees = [],
   onToggleMute,
   onToggleCamera,
   onHangUp,
@@ -74,7 +76,7 @@ const VideoCallModal: React.FC<Props> = ({
   const [dots, setDots] = useState(".");
   const ringCtxRef = useRef<AudioContext | null>(null);
   const ringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isRinging = remoteStreams.length === 0;
+  const isRinging = remoteStreams.length === 0 && pendingInvitees.length === 0;
 
   // Animated dots
   useEffect(() => {
@@ -208,8 +210,19 @@ const VideoCallModal: React.FC<Props> = ({
           <VideoTile key={rs.connectionId} stream={rs.stream} label={rs.userId.slice(0, 8)} />
         ))}
 
+        {/* Pending invitees — ringing tiles */}
+        {pendingInvitees.map((p) => (
+          <div key={p.userId} style={{ position: "relative", borderRadius: 12, overflow: "hidden", background: "#1a1a2e", flex: 1, minWidth: 180, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 160 }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, animation: "pulse-ring 1.5s ease-in-out infinite" }}>
+              {p.name.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ color: "#fff", fontSize: "0.85rem", fontWeight: 500 }}>{p.name}</div>
+            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.72rem" }}>Ringing…</div>
+          </div>
+        ))}
+
         {/* Ringing / waiting state */}
-        {remoteStreams.length === 0 && (
+        {remoteStreams.length === 0 && pendingInvitees.length === 0 && (
           <div
             style={{
               flex: 1,

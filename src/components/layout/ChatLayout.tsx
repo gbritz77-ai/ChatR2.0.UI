@@ -150,6 +150,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [showCallInvite, setShowCallInvite] = useState(false);
   const [callInviteSearch, setCallInviteSearch] = useState("");
+  const [pendingCallInvitees, setPendingCallInvitees] = useState<{ userId: string; name: string }[]>([]);
   const webRTC = useWebRTC(connectionRef);
 
   // Mobile responsive state
@@ -522,6 +523,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
     connection.on("UserJoinedCall", async (data: { callId: string; userId: string; connectionId: string }) => {
       console.log("[Call] UserJoinedCall:", data);
+      setPendingCallInvitees((prev) => prev.filter((p) => p.userId !== data.userId));
       webRTC.createPeerConnection(
         data.connectionId, data.userId, data.callId,
         (rs) => setRemoteStreams((prev) => [...prev.filter((s) => s.connectionId !== rs.connectionId), rs]),
@@ -764,6 +766,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     webRTC.closeAllConnections();
     setRemoteStreams([]);
     setLocalStream(null);
+    setPendingCallInvitees([]);
   }, [webRTC]);
 
   const handleToggleMute = useCallback(() => {
@@ -780,12 +783,13 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     }
   }, [webRTC]);
 
-  const handleInviteToCall = useCallback(async (targetUserId: string) => {
+  const handleInviteToCall = useCallback(async (targetUserId: string, targetName?: string) => {
     const callId = activeCallIdRef.current;
     const conn = connectionRef.current;
     if (!callId || !conn) return;
     try {
       await conn.invoke("InviteToCall", callId, targetUserId);
+      setPendingCallInvitees((prev) => [...prev.filter((p) => p.userId !== targetUserId), { userId: targetUserId, name: targetName ?? targetUserId.slice(0, 8) }]);
     } catch (e) {
       console.error("[Call] InviteToCall failed", e);
     }
@@ -1079,6 +1083,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
           onToggleMute={handleToggleMute}
           onToggleCamera={handleToggleCamera}
           onHangUp={handleHangUp}
+          pendingInvitees={pendingCallInvitees}
           onInvite={() => { setShowCallInvite(true); setCallInviteSearch(""); }}
         />
       )}
@@ -1103,7 +1108,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                 })
                 .map((c) => (
                   <button key={c.id} type="button"
-                    onClick={() => { console.log("[Call] Inviting", c.otherUserId); handleInviteToCall(c.otherUserId!); }}
+                    onClick={() => { console.log("[Call] Inviting", c.otherUserId); handleInviteToCall(c.otherUserId!, c.name); }}
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", color: tokens.textMain, width: "100%" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = tokens.bgSidebar)}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
