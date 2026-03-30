@@ -1069,61 +1069,61 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         />
       )}
       {activeCall && (
-        <>
-          <VideoCallModal
-            callId={activeCall.callId}
-            calleeName={activeCall.calleeName}
-            localStream={localStream}
-            remoteStreams={remoteStreams}
-            isMuted={isMuted}
-            isCameraOff={isCameraOff}
-            onToggleMute={handleToggleMute}
-            onToggleCamera={handleToggleCamera}
-            onHangUp={handleHangUp}
-            onInvite={() => { setShowCallInvite(true); setCallInviteSearch(""); }}
-          />
-          {showCallInvite && (
-            <div style={{ position: "fixed", inset: 0, zIndex: 10001, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ background: tokens.bgCard, borderRadius: 14, padding: "20px 24px", width: 320, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
-                <div style={{ fontWeight: 600, fontSize: "1rem", marginBottom: 12, color: tokens.textMain }}>Invite to call</div>
-                <input
-                  autoFocus
-                  value={callInviteSearch}
-                  onChange={(e) => setCallInviteSearch(e.target.value)}
-                  placeholder="Search by name or email…"
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${tokens.border}`, background: tokens.bgMain, color: tokens.textMain, fontSize: "0.9rem", outline: "none", boxSizing: "border-box", marginBottom: 10 }}
-                />
-                <div style={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-                  {conversations
-                    .filter((c) => c.type === "direct")
-                    .filter((c) => {
-                      const q = callInviteSearch.toLowerCase();
-                      return !q || c.name.toLowerCase().includes(q);
-                    })
-                    .map((c) => (
-                      <button key={c.id} type="button" onClick={() => handleInviteToCall(c.otherUserId!)}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", color: tokens.textMain, width: "100%" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = tokens.bgSidebar)}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                      >
-                        <div style={{ width: 34, height: 34, borderRadius: "50%", background: tokens.accent, color: tokens.textOnAccent, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", flexShrink: 0 }}>
-                          {c.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "0.88rem", fontWeight: 500 }}>{c.name}</div>
-                          {c.otherUserGroup && <div style={{ fontSize: "0.72rem", opacity: 0.6 }}>{c.otherUserGroup}</div>}
-                        </div>
-                      </button>
-                    ))}
-                </div>
-                <button type="button" onClick={() => setShowCallInvite(false)}
-                  style={{ marginTop: 12, width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${tokens.border}`, background: "transparent", color: tokens.textMuted, cursor: "pointer", fontSize: "0.85rem" }}>
-                  Cancel
-                </button>
-              </div>
+        <VideoCallModal
+          callId={activeCall.callId}
+          calleeName={activeCall.calleeName}
+          localStream={localStream}
+          remoteStreams={remoteStreams}
+          isMuted={isMuted}
+          isCameraOff={isCameraOff}
+          onToggleMute={handleToggleMute}
+          onToggleCamera={handleToggleCamera}
+          onHangUp={handleHangUp}
+          onInvite={() => { setShowCallInvite(true); setCallInviteSearch(""); }}
+        />
+      )}
+
+      {showCallInvite && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: tokens.bgCard, borderRadius: 14, padding: "20px 24px", width: 320, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+            <div style={{ fontWeight: 600, fontSize: "1rem", marginBottom: 12, color: tokens.textMain }}>Invite to call</div>
+            <input
+              autoFocus
+              value={callInviteSearch}
+              onChange={(e) => setCallInviteSearch(e.target.value)}
+              placeholder="Search by name or email…"
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${tokens.border}`, background: tokens.bgMain, color: tokens.textMain, fontSize: "0.9rem", outline: "none", boxSizing: "border-box", marginBottom: 10 }}
+            />
+            <div style={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+              {conversations
+                .filter((c) => c.type === "direct" && !!c.otherUserId)
+                .filter((c) => {
+                  const q = callInviteSearch.toLowerCase();
+                  return !q || c.name.toLowerCase().includes(q);
+                })
+                .map((c) => (
+                  <button key={c.id} type="button"
+                    onClick={() => { console.log("[Call] Inviting", c.otherUserId); handleInviteToCall(c.otherUserId!); }}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", color: tokens.textMain, width: "100%" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = tokens.bgSidebar)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: tokens.accent, color: tokens.textOnAccent, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", flexShrink: 0 }}>
+                      {c.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.88rem", fontWeight: 500 }}>{c.name}</div>
+                      {c.otherUserGroup && <div style={{ fontSize: "0.72rem", opacity: 0.6 }}>{c.otherUserGroup}</div>}
+                    </div>
+                  </button>
+                ))}
             </div>
-          )}
-        </>
+            <button type="button" onClick={() => setShowCallInvite(false)}
+              style={{ marginTop: 12, width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${tokens.border}`, background: "transparent", color: tokens.textMuted, cursor: "pointer", fontSize: "0.85rem" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
 
       {forwardingMessage && (
