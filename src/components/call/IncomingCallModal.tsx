@@ -3,11 +3,12 @@ import { useTheme } from "../../context/ThemeContext";
 
 interface Props {
   callerName: string;
+  groupName?: string;
   onAccept: () => void;
   onReject: () => void;
 }
 
-const IncomingCallModal: React.FC<Props> = ({ callerName, onAccept, onReject }) => {
+const IncomingCallModal: React.FC<Props> = ({ callerName, groupName, onAccept, onReject }) => {
   const { tokens } = useTheme();
 
   // Play a ringing tone using Web Audio API
@@ -85,11 +86,16 @@ const IncomingCallModal: React.FC<Props> = ({ callerName, onAccept, onReject }) 
         </div>
 
         <div style={{ fontSize: "0.8rem", opacity: 0.6, color: tokens.textMuted }}>
-          Incoming video call
+          {groupName ? "Incoming group video call" : "Incoming video call"}
         </div>
         <div style={{ fontSize: "1.2rem", fontWeight: 700, color: tokens.textMain }}>
-          {callerName}
+          {groupName ?? callerName}
         </div>
+        {groupName && (
+          <div style={{ fontSize: "0.85rem", color: tokens.textMuted }}>
+            started by {callerName}
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 20, marginTop: 24 }}>
           {/* Reject */}

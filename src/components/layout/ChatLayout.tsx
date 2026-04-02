@@ -141,7 +141,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
 
   // ─── Video Call State ────────────────────────────────────────────────────────
-  const [incomingCall, setIncomingCall] = useState<{ callId: string; callerName: string } | null>(null);
+  const [incomingCall, setIncomingCall] = useState<{ callId: string; callerName: string; groupName?: string } | null>(null);
   const [activeCall, setActiveCall] = useState<{ callId: string; calleeName?: string } | null>(null);
   const activeCallIdRef = useRef<string>("");  // always up-to-date callId for callbacks
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -498,8 +498,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       setActiveCall({ callId: data.callId });
     });
 
-    connection.on("IncomingCall", (data: { callId: string; callerName: string }) => {
-      setIncomingCall({ callId: data.callId, callerName: data.callerName });
+    connection.on("IncomingCall", (data: { callId: string; callerName: string; groupName?: string }) => {
+      setIncomingCall({ callId: data.callId, callerName: data.callerName, groupName: data.groupName });
     });
 
     connection.on("CallAccepted", async (data: { callId: string; participants: { userId: string; connectionId: string }[] }) => {
@@ -725,6 +725,28 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       setLocalStream(null);
     }
   }, [webRTC, authToken, conversations]);
+
+  const handleStartGroupCall = useCallback(async (chatId: string, groupName: string) => {
+    const conn = connectionRef.current;
+    if (!conn || conn.state !== signalR.HubConnectionState.Connected) return;
+    try {
+      try {
+        const turnServers = await getTurnCredentials(authToken);
+        webRTC.setIceServers(turnServers);
+      } catch (e) {
+        console.warn("[Call] Could not fetch TURN credentials, using STUN only:", e);
+      }
+      const stream = await webRTC.getLocalStream();
+      setLocalStream(stream);
+      setActiveCall({ callId: "", calleeName: groupName });
+      await conn.invoke("CallGroup", chatId);
+    } catch (e) {
+      console.error("Failed to start group call", e);
+      setActiveCall(null);
+      webRTC.stopLocalStream();
+      setLocalStream(null);
+    }
+  }, [webRTC, authToken]);
 
   const handleAcceptCall = useCallback(async () => {
     if (!incomingCall) return;
@@ -1068,6 +1090,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       {incomingCall && !activeCall && (
         <IncomingCallModal
           callerName={incomingCall.callerName}
+          groupName={incomingCall.groupName}
           onAccept={handleAcceptCall}
           onReject={handleRejectCall}
         />
@@ -1245,6 +1268,23 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                   <button
                     onClick={() => handleStartCall(selectedConversation.otherUserId!, selectedConversation.id)}
                     title="Start video call"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 22,
+                      padding: "0 14px",
+                      color: tokens.textMuted,
+                      flexShrink: 0,
+                    }}
+                  >
+                    📹
+                  </button>
+                )}
+                {selectedConversation.type === "group" && (
+                  <button
+                    onClick={() => handleStartGroupCall(selectedConversation.id, selectedConversation.name)}
+                    title="Start group video call"
                     style={{
                       background: "none",
                       border: "none",
