@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ChatR</string>
+    <string name="title_activity_main">ChatR</string>
+    <string name="package_name">co.za.outsec.chatr</string>
+    <string name="custom_url_scheme">co.za.outsec.chatr</string>
+</resources>
