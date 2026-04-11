@@ -7,6 +7,7 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -23,6 +24,12 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Capacitor forces edge-to-edge (setDecorFitsSystemWindows=false) in super.onCreate.
+        // Re-enable normal fitting so Android handles status/nav bar spacing naturally
+        // and so adjustResize works correctly when the soft keyboard appears.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+
         requestMediaPermissionsIfNeeded();
     }
 
