@@ -31,12 +31,6 @@ body,
 .chat-root {
   position: fixed;      /* pin to the viewport */
   inset: 0;             /* top/right/bottom/left = 0 */
-  /* Safe area: Android injects --sat/sab/sal/sar via MainActivity.
-     iOS uses env(safe-area-inset-*). Falls back to 0. */
-  padding-top: var(--sat, env(safe-area-inset-top, 0px));
-  padding-bottom: var(--sab, env(safe-area-inset-bottom, 0px));
-  padding-left: var(--sal, env(safe-area-inset-left, 0px));
-  padding-right: var(--sar, env(safe-area-inset-right, 0px));
   display: flex;
 
   background: radial-gradient(
