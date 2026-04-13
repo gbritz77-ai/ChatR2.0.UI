@@ -7,9 +7,10 @@ interface Props {
   conversations: Conversation[];
   selectedId: string;
   onSelect: (id: string) => void;
+  onDeleteChat?: (chatId: string) => void;
 }
 
-const ConversationList: React.FC<Props> = ({ conversations, selectedId, onSelect }) => {
+const ConversationList: React.FC<Props> = ({ conversations, selectedId, onSelect, onDeleteChat }) => {
   const { tokens } = useTheme();
   const [groupFilter, setGroupFilter] = useState<string>("All");
 
@@ -46,6 +47,7 @@ const ConversationList: React.FC<Props> = ({ conversations, selectedId, onSelect
               conversation={conv}
               isSelected={conv.id === selectedId}
               onClick={() => onSelect(conv.id)}
+              onDelete={onDeleteChat}
             />
           ))}
         </>
@@ -89,6 +91,7 @@ const ConversationList: React.FC<Props> = ({ conversations, selectedId, onSelect
                 conversation={conv}
                 isSelected={conv.id === selectedId}
                 onClick={() => onSelect(conv.id)}
+                onDelete={onDeleteChat}
               />
             ))
           )}

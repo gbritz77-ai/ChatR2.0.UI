@@ -1244,7 +1244,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
           {isLoadingConversations && conversations.length === 0 ? (
             <div style={{ padding: "0.75rem", fontSize: "0.8rem", color: tokens.textMuted }}>Loading chats…</div>
           ) : (
-            <ConversationList conversations={conversations} selectedId={selectedConversationId} onSelect={handleSelectConversation} />
+            <ConversationList conversations={conversations} selectedId={selectedConversationId} onSelect={handleSelectConversation} onDeleteChat={handleDeleteGroup} />
           )}
         </aside>
 

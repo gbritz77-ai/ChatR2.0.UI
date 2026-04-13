@@ -24,6 +24,8 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend, replyingTo, onCancelRep
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -118,6 +120,44 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend, replyingTo, onCancelRep
     }
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const allowed = /^(image\/|application\/pdf|video\/mp4|video\/quicktime)/;
+    if (!allowed.test(file.type)) {
+      setError("Unsupported file type. Allowed: images, PDF, MP4, MOV.");
+      return;
+    }
+
+    setSelectedFile(file);
+    setError(null);
+  };
+
   const iconBtnStyle = (color: string): React.CSSProperties => ({
     borderRadius: "999px",
     border: `1px solid ${tokens.border2}`,
@@ -130,7 +170,30 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend, replyingTo, onCancelRep
   });
 
   return (
-    <div className="message-input-bar" style={{ position: "relative" }}>
+    <div
+      className="message-input-bar"
+      style={{ position: "relative" }}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 30,
+          border: `2px dashed ${tokens.accent}`,
+          borderRadius: 12,
+          background: `${tokens.accent}22`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
+          <span style={{ fontSize: '1rem', color: tokens.accent, fontWeight: 600 }}>
+            Drop file to attach
+          </span>
+        </div>
+      )}
       {replyingTo && (
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
