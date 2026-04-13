@@ -63,84 +63,72 @@ export default function App() {
           width: "100%", maxWidth: 520,
           borderRadius: 16, overflow: "hidden",
           boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
-          position: "relative",
+          background: "rgba(10,15,35,0.92)",
         }}>
-          {/* Logo fills the card */}
+          {/* Logo full width at top */}
           <img src="/logo.jpeg" alt="ChatR" style={{ width: "100%", display: "block" }} />
 
-          {/* Form overlaid on the lower half of the logo */}
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", flexDirection: "column",
-            justifyContent: "flex-end", padding: "20px 28px 24px",
-          }}>
-            <div style={{
-              background: "rgba(10,15,35,0.72)",
-              backdropFilter: "blur(12px)",
-              borderRadius: 12,
-              padding: "20px 20px 16px",
-              border: "1px solid rgba(255,255,255,0.12)",
-            }}>
-              {error && <div className="auth-error" style={{ marginBottom: 10 }}>{error}</div>}
+          {/* Form panel below the logo */}
+          <div style={{ padding: "20px 28px 24px" }}>
+            {error && <div className="auth-error" style={{ marginBottom: 10 }}>{error}</div>}
 
-              <form onSubmit={handleLogin} className="auth-form" autoComplete="off">
-                <div className="field">
-                  <label>Username</label>
-                  <input
-                    value={usernameOrEmail}
-                    onChange={(e) => setUser(e.target.value)}
-                    autoComplete="off"
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Password</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete="new-password"
-                      style={{ paddingRight: "2.5rem", width: "100%", boxSizing: "border-box" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0, display: "flex" }}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <button className="auth-btn" type="submit" disabled={isLoggingIn} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  {isLoggingIn && (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: "spin 0.8s linear infinite", flexShrink: 0 }}>
-                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                    </svg>
-                  )}
-                  {isLoggingIn ? "Signing in…" : "Login"}
-                </button>
-              </form>
-
-              <div style={{ textAlign: "center", marginTop: 12 }}>
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  style={{ background: "none", border: "none", cursor: "pointer", opacity: 0.5, fontSize: "0.75rem", color: "#fff" }}
-                >
-                  {theme === "dark" ? "☀ Switch to light mode" : "🌙 Switch to dark mode"}
-                </button>
+            <form onSubmit={handleLogin} className="auth-form" autoComplete="off">
+              <div className="field">
+                <label>Username</label>
+                <input
+                  value={usernameOrEmail}
+                  onChange={(e) => setUser(e.target.value)}
+                  autoComplete="off"
+                />
               </div>
+
+              <div className="field">
+                <label>Password</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                    style={{ paddingRight: "2.5rem", width: "100%", boxSizing: "border-box" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0, display: "flex" }}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <button className="auth-btn" type="submit" disabled={isLoggingIn} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                {isLoggingIn && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: "spin 0.8s linear infinite", flexShrink: 0 }}>
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                )}
+                {isLoggingIn ? "Signing in…" : "Login"}
+              </button>
+            </form>
+
+            <div style={{ textAlign: "center", marginTop: 12 }}>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                style={{ background: "none", border: "none", cursor: "pointer", opacity: 0.5, fontSize: "0.75rem", color: "#fff" }}
+              >
+                {theme === "dark" ? "☀ Switch to light mode" : "🌙 Switch to dark mode"}
+              </button>
             </div>
           </div>
         </div>
