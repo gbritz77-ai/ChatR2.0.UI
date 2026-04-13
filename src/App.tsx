@@ -69,7 +69,7 @@ export default function App() {
 
           <form onSubmit={handleLogin} className="auth-form" autoComplete="off">
             <div className="field">
-              <label>Username or Email</label>
+              <label>Username</label>
               <input
                 value={usernameOrEmail}
                 onChange={(e) => setUser(e.target.value)}
