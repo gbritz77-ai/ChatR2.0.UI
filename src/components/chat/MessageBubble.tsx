@@ -27,7 +27,7 @@ const SingleTick = () => (
 );
 
 const DoubleTick = ({ read }: { read: boolean }) => {
-  const color = read ? "#38bdf8" : "rgba(255,255,255,0.5)";
+  const color = read ? "#ffffff" : "rgba(255,255,255,0.5)";
   return (
     <svg width="18" height="10" viewBox="0 0 18 10" fill="none" style={{ display: "inline", verticalAlign: "middle", marginLeft: 4 }}>
       <path d="M1 5L4.5 8.5L12.5 1" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

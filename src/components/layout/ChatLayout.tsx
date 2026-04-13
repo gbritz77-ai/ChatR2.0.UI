@@ -156,6 +156,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   // Mobile responsive state
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showGroupCreationForm, setShowGroupCreationForm] = useState(false);
 
   useEffect(() => {
     const handle = () => {
@@ -997,7 +998,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     <div className="chat-root">
       <div className="chat-topbar" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: isMobile ? '0 12px' : '0 24px', width: '100%', position: 'fixed', top: 0, left: 0,
+        padding: isMobile ? '0 12px' : '0 24px', width: '100%', position: 'fixed', top: 'var(--android-top, 0px)', left: 0,
         background: tokens.bgMain, zIndex: 1000, height: '56px', boxSizing: 'border-box',
         borderBottom: `1px solid ${tokens.border}`,
       }}>
@@ -1027,17 +1028,15 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               editable
               onClick={() => fileInputRef.current?.click()}
             />
-            {!isMobile && (
-              <button
-                type="button"
-                className="chat-topbar-user"
-                onClick={() => setShowAvailabilityEditor((v) => !v)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: tokens.textMuted, fontSize: '0.85rem' }}
-                title="Edit availability"
-              >
-                {currentUserName} ✎
-              </button>
-            )}
+            <button
+              type="button"
+              className="chat-topbar-user"
+              onClick={() => setShowAvailabilityEditor((v) => !v)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: tokens.textMuted, fontSize: isMobile ? '1rem' : '0.85rem' }}
+              title="Edit availability"
+            >
+              {isMobile ? '✎' : `${currentUserName} ✎`}
+            </button>
             <input
               ref={fileInputRef}
               type="file"
@@ -1190,11 +1189,33 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         </div>
       )}
 
-      <div className="chat-body" style={{ marginTop: '56px' }}>
+      <div className="chat-body" style={{ marginTop: 'calc(56px + var(--android-top, 0px))' }}>
         <aside className={`chat-sidebar${isMobile && !sidebarOpen ? ' sidebar-hidden' : ''}`}>
           <div className="chat-sidebar-header" />
 
-          <GroupCreation onCreateGroup={handleCreateGroup} isLoading={isCreatingGroup} token={authToken} />
+          {isMobile ? (
+            <div style={{ borderBottom: `1px solid ${tokens.border}` }}>
+              <button
+                type="button"
+                onClick={() => setShowGroupCreationForm(v => !v)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
+                  color: tokens.textMain, fontSize: '0.9rem', fontWeight: 500,
+                }}
+              >
+                <span>+ Create Group</span>
+                <span style={{ color: tokens.textMuted, fontSize: '0.8rem' }}>{showGroupCreationForm ? '▲' : '▼'}</span>
+              </button>
+              {showGroupCreationForm && (
+                <div style={{ paddingBottom: 8 }}>
+                  <GroupCreation onCreateGroup={handleCreateGroup} isLoading={isCreatingGroup} token={authToken} />
+                </div>
+              )}
+            </div>
+          ) : (
+            <GroupCreation onCreateGroup={handleCreateGroup} isLoading={isCreatingGroup} token={authToken} />
+          )}
 
           <div className="user-search-container">
             <div className="user-search-label">Start private chat</div>

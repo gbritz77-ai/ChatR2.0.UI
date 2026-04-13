@@ -31,6 +31,11 @@ body,
 .chat-root {
   position: fixed;      /* pin to the viewport */
   inset: 0;             /* top/right/bottom/left = 0 */
+  /* --android-top / --android-bottom are injected by MainActivity.java
+     via evaluateJavascript with the real status-bar / nav-bar dp heights.
+     On web (no injection) they fall back to 0px safely. */
+  padding-top:    var(--android-top,    0px);
+  padding-bottom: var(--android-bottom, 0px);
   display: flex;
 
   background: radial-gradient(
@@ -626,7 +631,7 @@ body,
   /* Sidebar becomes a full-screen slide-in drawer */
   .chat-sidebar {
     position: fixed;
-    top: 56px;
+    top: calc(56px + var(--android-top, 0px));
     left: 0;
     bottom: 0;
     width: 100% !important;

@@ -289,27 +289,35 @@ const MessageInput: React.FC<Props> = ({ chatId, onSend, replyingTo, onCancelRep
           GIF
         </button>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          hidden
-          accept="image/*,application/pdf,video/mp4,video/quicktime"
-          onChange={(e) => {
-            const f = e.target.files?.[0] ?? null;
-            setSelectedFile(f);
-            setError(null);
-          }}
-        />
-
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
+        {/* Wrap input INSIDE the label — most reliable trigger on Android Capacitor.
+            The input is visually hidden (1×1 px, opacity 0) but not display:none,
+            which would prevent the system file picker from opening on Android. */}
+        <label
           title="Attach file"
-          disabled={busy}
-          style={iconBtnStyle("#a78bfa")}
+          style={{
+            ...iconBtnStyle("#a78bfa"),
+            cursor: busy ? 'not-allowed' : 'pointer',
+            pointerEvents: busy ? 'none' : 'auto',
+            position: 'relative',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
+          <input
+            ref={fileInputRef}
+            type="file"
+            disabled={busy}
+            style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
+            accept="image/*,application/pdf,video/mp4,video/quicktime"
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              setSelectedFile(f);
+              setError(null);
+            }}
+          />
           📎
-        </button>
+        </label>
 
         {/* Spacer pushes Send to the right */}
         <div style={{ flex: 1 }} />
