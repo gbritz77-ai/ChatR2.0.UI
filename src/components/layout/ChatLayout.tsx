@@ -998,7 +998,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     <div className="chat-root">
       <div className="chat-topbar" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: isMobile ? '0 12px' : '0 24px', width: '100%', position: 'fixed', top: 'var(--android-top, 0px)', left: 0,
+        padding: isMobile ? '0 12px' : '0 24px', width: '100%', position: 'fixed', top: 'var(--status-bar-top, env(safe-area-inset-top, 0px))', left: 0,
         background: tokens.bgMain, zIndex: 1000, height: '56px', boxSizing: 'border-box',
         borderBottom: `1px solid ${tokens.border}`,
       }}>
@@ -1189,7 +1189,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         </div>
       )}
 
-      <div className="chat-body" style={{ marginTop: 'calc(56px + var(--android-top, 0px))' }}>
+      <div className="chat-body" style={{ marginTop: 'calc(56px + var(--status-bar-top, env(safe-area-inset-top, 0px)))' }}>
         <aside className={`chat-sidebar${isMobile && !sidebarOpen ? ' sidebar-hidden' : ''}`}>
           <div className="chat-sidebar-header" />
 

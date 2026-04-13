@@ -7,7 +7,6 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.view.WindowCompat;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -24,13 +23,45 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Capacitor forces edge-to-edge (setDecorFitsSystemWindows=false) in super.onCreate.
-        // Re-enable normal fitting so Android handles status/nav bar spacing naturally
-        // and so adjustResize works correctly when the soft keyboard appears.
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
-
         requestMediaPermissionsIfNeeded();
+        refineSystemBarHeights();
+    }
+
+    /**
+     * Reads the real status-bar height from Android dimension resources and
+     * injects it as a CSS custom property to refine the JS-side default (28px).
+     *
+     * IMPORTANT: we only override if the measured value is > 0.
+     * The JS default (28px) is our safety net — we must never reset it to 0.
+     */
+    private void refineSystemBarHeights() {
+        float density = getResources().getDisplayMetrics().density;
+        final int topDp    = Math.round(getStatusBarHeightPx() / density);
+        final int bottomDp = Math.round(getNavBarHeightPx()    / density);
+
+        // Guard: only inject values we actually trust
+        final String js =
+            "(function(){" +
+            "  var t=" + topDp + ", b=" + bottomDp + ";" +
+            "  if(t>0) document.documentElement.style.setProperty('--status-bar-top',    t+'px');" +
+            "  if(b>0) document.documentElement.style.setProperty('--android-bottom', b+'px');" +
+            "})();";
+
+        android.webkit.WebView wv = getBridge().getWebView();
+        wv.postDelayed(() -> wv.evaluateJavascript(js, null), 600);
+        wv.postDelayed(() -> wv.evaluateJavascript(js, null), 1600);
+    }
+
+    private int getStatusBarHeightPx() {
+        int rid = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (rid > 0) return getResources().getDimensionPixelSize(rid);
+        return Math.round(28 * getResources().getDisplayMetrics().density);
+    }
+
+    private int getNavBarHeightPx() {
+        int rid = getResources().getIdentifier("navigation_bar_height", "dimen", "android");
+        if (rid > 0) return getResources().getDimensionPixelSize(rid);
+        return 0;
     }
 
     private void requestMediaPermissionsIfNeeded() {
