@@ -1193,29 +1193,25 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         <aside className={`chat-sidebar${isMobile && !sidebarOpen ? ' sidebar-hidden' : ''}`}>
           <div className="chat-sidebar-header" />
 
-          {isMobile ? (
-            <div style={{ borderBottom: `1px solid ${tokens.border}` }}>
-              <button
-                type="button"
-                onClick={() => setShowGroupCreationForm(v => !v)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
-                  color: tokens.textMain, fontSize: '0.9rem', fontWeight: 500,
-                }}
-              >
-                <span>+ Create Group</span>
-                <span style={{ color: tokens.textMuted, fontSize: '0.8rem' }}>{showGroupCreationForm ? '▲' : '▼'}</span>
-              </button>
-              {showGroupCreationForm && (
-                <div style={{ paddingBottom: 8 }}>
-                  <GroupCreation onCreateGroup={handleCreateGroup} isLoading={isCreatingGroup} token={authToken} />
-                </div>
-              )}
-            </div>
-          ) : (
-            <GroupCreation onCreateGroup={handleCreateGroup} isLoading={isCreatingGroup} token={authToken} />
-          )}
+          <div style={{ borderBottom: `1px solid ${tokens.border}` }}>
+            <button
+              type="button"
+              onClick={() => setShowGroupCreationForm(v => !v)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
+                color: tokens.textMain, fontSize: '0.9rem', fontWeight: 500,
+              }}
+            >
+              <span>+ Create Group</span>
+              <span style={{ color: tokens.textMuted, fontSize: '0.8rem' }}>{showGroupCreationForm ? '▲' : '▼'}</span>
+            </button>
+            {showGroupCreationForm && (
+              <div style={{ paddingBottom: 8 }}>
+                <GroupCreation onCreateGroup={handleCreateGroup} isLoading={isCreatingGroup} token={authToken} />
+              </div>
+            )}
+          </div>
 
           <div className="user-search-container">
             <div className="user-search-label">Start private chat</div>
