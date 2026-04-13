@@ -42,18 +42,53 @@ const AttachmentItem: React.FC<{
   onDownload: (attachmentId: string, chatId: string) => Promise<string>;
 }> = ({ attachment, chatId, onDownload }) => {
   const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  const isImage = attachment.contentType.startsWith("image/");
+
+  useEffect(() => {
+    if (!isImage) return;
+    onDownload(attachment.id, chatId)
+      .then(setImageUrl)
+      .catch(() => {});
+  }, [attachment.id, chatId, isImage]);
 
   const handleClick = async () => {
     setLoading(true);
     try {
-      const url = await onDownload(attachment.id, chatId);
+      const url = imageUrl ?? await onDownload(attachment.id, chatId);
       window.open(url, "_blank", "noopener,noreferrer");
     } finally {
       setLoading(false);
     }
   };
 
-  const isImage = attachment.contentType.startsWith("image/");
+  if (isImage) {
+    return (
+      <div style={{ marginTop: 6 }}>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={attachment.fileName}
+            onClick={() => void handleClick()}
+            style={{
+              maxWidth: "280px", maxHeight: "280px", borderRadius: 8,
+              cursor: "pointer", display: "block", objectFit: "cover",
+            }}
+          />
+        ) : (
+          <div style={{
+            width: 120, height: 80, borderRadius: 8,
+            background: "rgba(255,255,255,0.08)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "0.75rem", color: "#94a3b8",
+          }}>
+            Loading…
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <button
@@ -69,7 +104,7 @@ const AttachmentItem: React.FC<{
         opacity: loading ? 0.7 : 1,
       }}
     >
-      <span>{isImage ? "🖼" : "📎"}</span>
+      <span>📎</span>
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>
         {attachment.fileName}
       </span>
