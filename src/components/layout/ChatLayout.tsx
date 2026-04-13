@@ -1261,21 +1261,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
           {selectedConversation ? (
             <>
-              {isMobile && (
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen(true)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '8px 14px', background: 'none',
-                    border: 'none', borderBottom: `1px solid ${tokens.border}`,
-                    color: tokens.accent, fontSize: '0.85rem', cursor: 'pointer',
-                    width: '100%', textAlign: 'left',
-                  }}
-                >
-                  ← Back
-                </button>
-              )}
               <div style={{ display: "flex", alignItems: "center" }}>
                 <div style={{ flex: 1 }}>
                   <ChatHeader
