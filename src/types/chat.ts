@@ -10,6 +10,7 @@ export interface Conversation {
   type: ConversationType;   // "direct" or "group"
   isOnline?: boolean;       // optional for 1:1
   otherUserId?: string;     // used for presence matching
+  otherUserLastSeenAt?: string | null; // used for periodic presence recalculation
   createdByUserId?: string; // used to highlight group creator
   otherUserHasAvatar?: boolean;
   otherUserGroup?: string | null;

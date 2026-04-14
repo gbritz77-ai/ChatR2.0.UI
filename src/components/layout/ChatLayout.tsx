@@ -273,6 +273,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     unreadCount: dto.unreadCount ?? 0,
     type: dto.isGroup ? "group" : "direct",
     isOnline: dto.isGroup ? undefined : isOnlineFromLastSeen(dto.otherUserLastSeenAt),
+    otherUserLastSeenAt: dto.otherUserLastSeenAt ?? null,
     otherUserId: dto.otherUserId ?? undefined,
     createdByUserId: dto.createdByUserId ?? undefined,
     otherUserHasAvatar: dto.otherUserHasAvatar ?? false,
@@ -436,9 +437,12 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
     // Presence updates
     connection.on("UserPresenceChanged", (data: { userId: string; isOnline: boolean }) => {
+      const now = new Date().toISOString();
       setConversations((prev) =>
         prev.map((c) =>
-          c.otherUserId === data.userId ? { ...c, isOnline: data.isOnline } : c
+          c.otherUserId === data.userId
+            ? { ...c, isOnline: data.isOnline, otherUserLastSeenAt: data.isOnline ? now : c.otherUserLastSeenAt }
+            : c
         )
       );
     });
@@ -585,12 +589,13 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       setLocalStream(null);
     });
 
-    // Re-join all groups after automatic reconnection (server drops group membership on disconnect)
+    // Re-join all groups + re-ping presence after automatic reconnection
     connection.onreconnected(() => {
       console.log("[SignalR] Reconnected — rejoining chat groups");
       for (const c of conversationsRef.current) {
         connection.invoke("JoinChat", c.id).catch(() => {});
       }
+      connection.invoke("PingPresence").catch(() => {});
     });
 
     connection.start()
@@ -600,10 +605,33 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
         for (const c of conversationsRef.current) {
           connection.invoke("JoinChat", c.id).catch(() => {});
         }
+        // Initial presence ping
+        connection.invoke("PingPresence").catch(() => {});
       })
       .catch((err) => console.error("[SignalR] Connection error", err));
 
+    // Heartbeat: ping every 2 minutes to keep LastSeenAt fresh
+    const heartbeatInterval = setInterval(() => {
+      if (connection.state === "Connected") {
+        connection.invoke("PingPresence").catch(() => {});
+      }
+    }, 2 * 60 * 1000);
+
+    // Refresh isOnline derived from lastSeenAt every 60 seconds
+    // (catches contacts that went offline without a clean disconnect)
+    const presenceRefreshInterval = setInterval(() => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.type === "direct" && c.otherUserLastSeenAt !== undefined
+            ? { ...c, isOnline: isOnlineFromLastSeen(c.otherUserLastSeenAt) }
+            : c
+        )
+      );
+    }, 60 * 1000);
+
     return () => {
+      clearInterval(heartbeatInterval);
+      clearInterval(presenceRefreshInterval);
       connectionRef.current = null;
       connection.stop();
     };
