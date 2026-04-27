@@ -89,7 +89,7 @@ export default function App() {
           background: "rgba(10,15,35,0.92)",
         }}>
           {/* Logo full width at top */}
-          <img src="/logo.jpeg" alt="ChatR" style={{ width: "100%", display: "block" }} />
+          <img src="/logo.jpeg" alt="Chat Hub" style={{ width: "100%", display: "block" }} />
 
           {/* Form panel — light background to match the white logo */}
           <div style={{ padding: "22px 28px 20px", background: "#ffffff" }}>

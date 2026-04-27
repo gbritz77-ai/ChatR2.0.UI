@@ -188,7 +188,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   // Update browser tab title + favicon badge with total unread count
   useEffect(() => {
     const total = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
-    document.title = total > 0 ? `(${total}) ChatR` : "ChatR";
+    document.title = total > 0 ? `(${total}) Chat Hub` : "Chat Hub";
 
     // Update favicon with red dot badge when there are unread messages
     const canvas = document.createElement("canvas");
@@ -1044,7 +1044,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               <HamburgerIcon />
             </button>
           )}
-          <img src="/logo.jpeg" alt="ChatR" style={{ height: 32, borderRadius: 6 }} />
+          <img src="/logo.jpeg" alt="Chat Hub" style={{ height: 32, borderRadius: 6 }} />
         </div>
 
         {/* Right side */}
