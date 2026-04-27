@@ -97,16 +97,36 @@ interface SetPwProps {
   onClose: () => void;
 }
 
+const EyeIcon = ({ visible }: { visible: boolean }) =>
+  visible ? (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+
 const SetPasswordModal: React.FC<SetPwProps> = ({ user, tokens, onSave, onClose }) => {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [showPw2, setShowPw2] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
   const inputStyle: React.CSSProperties = {
     background: tokens.bgInput, border: `1px solid ${tokens.border2}`, borderRadius: 8,
-    padding: "9px 12px", color: tokens.textMain, fontSize: "0.9rem", width: "100%", boxSizing: "border-box",
+    padding: "9px 36px 9px 12px", color: tokens.textMain, fontSize: "0.9rem", width: "100%", boxSizing: "border-box",
+  };
+
+  const toggleStyle: React.CSSProperties = {
+    position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+    background: "none", border: "none", cursor: "pointer", color: tokens.textMuted, padding: 0, display: "flex",
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -141,11 +161,21 @@ const SetPasswordModal: React.FC<SetPwProps> = ({ user, tokens, onSave, onClose 
             <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label style={{ color: tokens.textMuted, fontSize: "0.78rem" }}>New password</label>
-                <input type="password" value={pw} onChange={e => setPw(e.target.value)} required autoComplete="new-password" style={inputStyle} />
+                <div style={{ position: "relative" }}>
+                  <input type={showPw ? "text" : "password"} value={pw} onChange={e => setPw(e.target.value)} required autoComplete="new-password" style={inputStyle} />
+                  <button type="button" onClick={() => setShowPw(v => !v)} style={toggleStyle} aria-label={showPw ? "Hide" : "Show"}>
+                    <EyeIcon visible={showPw} />
+                  </button>
+                </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label style={{ color: tokens.textMuted, fontSize: "0.78rem" }}>Confirm password</label>
-                <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} required autoComplete="new-password" style={inputStyle} />
+                <div style={{ position: "relative" }}>
+                  <input type={showPw2 ? "text" : "password"} value={pw2} onChange={e => setPw2(e.target.value)} required autoComplete="new-password" style={inputStyle} />
+                  <button type="button" onClick={() => setShowPw2(v => !v)} style={toggleStyle} aria-label={showPw2 ? "Hide" : "Show"}>
+                    <EyeIcon visible={showPw2} />
+                  </button>
+                </div>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                 <button type="submit" disabled={saving} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "none", background: saving ? tokens.accentDisabled : tokens.accent, color: tokens.textOnAccent, fontWeight: 600, fontSize: "0.88rem", cursor: saving ? "not-allowed" : "pointer" }}>
