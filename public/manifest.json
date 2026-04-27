@@ -1,7 +1,7 @@
 {
-  "name": "ChatR",
-  "short_name": "ChatR",
-  "description": "Outsec ChatR — secure team messaging and video calls",
+  "name": "ChatHub",
+  "short_name": "ChatHub",
+  "description": "Outsec ChatHub — secure team messaging and video calls",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
