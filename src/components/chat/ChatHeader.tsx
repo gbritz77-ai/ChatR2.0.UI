@@ -48,9 +48,18 @@ const ChatHeader: React.FC<Props> = ({ conversation, currentUserId, onDeleteGrou
         )}
         <h2>{conversation.name}</h2>
         {conversation.type === "direct" && (
-          <div className="chat-header-status">
-            <span className={`chat-header-status-dot ${conversation.isOnline ? "online" : "offline"}`} />
-            <span>{conversation.isOnline ? "Online" : "Offline"}</span>
+          <div className="chat-header-status" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className={`chat-header-status-dot ${conversation.isOnline ? "online" : "offline"}`} />
+              <span style={{ color: conversation.isOnline ? "#16a34a" : undefined, fontWeight: conversation.isOnline ? 600 : undefined }}>
+                {conversation.isOnline ? "Online" : "Offline"}
+              </span>
+            </div>
+            {conversation.availabilitySchedule && conversation.availabilitySchedule.length > 0 && (
+              <div style={{ fontSize: '0.72rem', color: tokens.textMuted, marginLeft: 2 }}>
+                {conversation.availabilitySchedule.map(s => `${s.day} ${s.from}–${s.to}`).join(' · ')}
+              </div>
+            )}
           </div>
         )}
         {conversation.type === "group" && (

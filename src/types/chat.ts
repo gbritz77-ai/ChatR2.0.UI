@@ -2,6 +2,12 @@
 
 export type ConversationType = "direct" | "group";
 
+export interface DaySchedule {
+  day: string;   // "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
+  from: string;  // "09:00"
+  to: string;    // "17:00"
+}
+
 export interface Conversation {
   id: string;
   name: string;
@@ -15,7 +21,7 @@ export interface Conversation {
   otherUserHasAvatar?: boolean;
   otherUserGroup?: string | null;
   chatAvatarUrl?: string | null;
-  availability?: { days: string; from: string; to: string } | null;
+  availabilitySchedule?: DaySchedule[] | null;
   otherMemberLastReadAt?: string | null;
 }
 

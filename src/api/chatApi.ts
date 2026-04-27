@@ -54,6 +54,7 @@ export interface ChatUserDto {
   email: string | null;
   role: string;
   group: string | null;
+  availabilitySchedule?: string | null;
 }
 
 export interface GroupChatDto {
@@ -277,18 +278,12 @@ export async function getGroupMembers(chatId: string, token: string): Promise<Ch
   return res.data;
 }
 
-export interface AvailabilityPayload {
-  days: string | null;
-  from: string | null;
-  to:   string | null;
-}
-
-export async function updateMyAvailability(token: string, payload: AvailabilityPayload): Promise<void> {
+export async function updateMyAvailability(token: string, schedule: import('../types/chat').DaySchedule[] | null): Promise<void> {
   applyToken(token);
-  await api.put('/Users/me/availability', payload);
+  await api.put('/Users/me/availability', { schedule: schedule ? JSON.stringify(schedule) : null });
 }
 
-export async function getMe(token: string): Promise<{ id?: string; availabilityDays?: string; availabilityFrom?: string; availabilityTo?: string; hasAvatar?: boolean }> {
+export async function getMe(token: string): Promise<{ id?: string; availabilitySchedule?: string | null; hasAvatar?: boolean }> {
   applyToken(token);
   const res = await api.get('/Users/me');
   return res.data;

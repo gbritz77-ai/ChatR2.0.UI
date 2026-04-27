@@ -136,20 +136,30 @@ body,
 
 .conversation-status-dot {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 9px;
-  height: 9px;
+  bottom: -1px;
+  right: -1px;
+  width: 13px;
+  height: 13px;
   border-radius: 999px;
-  border: 2px solid #020617;
+  border: 2.5px solid #020617;
+  background: transparent;
 }
 
 .conversation-status-dot.online {
-  background: #22c55e;
+  background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
+  animation: pulse-online 2.5s ease-in-out infinite;
 }
 
 .conversation-status-dot.offline {
-  background: #64748b;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+@keyframes pulse-online {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35); }
+  50%       { box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12); }
 }
 
 .conversation-content {
@@ -239,17 +249,20 @@ body,
 }
 
 .chat-header-status-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
+  flex-shrink: 0;
 }
 
 .chat-header-status-dot.online {
-  background: #22c55e;
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+  animation: pulse-online 2.5s ease-in-out infinite;
 }
 
 .chat-header-status-dot.offline {
-  background: #64748b;
+  background: #475569;
 }
 
 .chat-header-status-dot.group {
@@ -447,7 +460,7 @@ body,
 
 .user-search-results {
   margin-top: 6px;
-  max-height: 180px;
+  max-height: 260px;
   overflow-y: auto;
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
@@ -500,6 +513,16 @@ body,
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+}
+
+.user-search-item-availability {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin-top: 1px;
+  opacity: 0.8;
 }
 .chat-topbar {
   height: 40px;
@@ -561,7 +584,15 @@ body,
 }
 
 [data-theme="light"] .conversation-status-dot {
+  border-color: #f8fafc;
+}
+
+[data-theme="light"] .conversation-status-dot.online {
   border-color: #ffffff;
+}
+
+[data-theme="light"] .conversation-item {
+  /* ensure dot border contrasts against light sidebar */
 }
 
 [data-theme="light"] .conversation-item:hover {

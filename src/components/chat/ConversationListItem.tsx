@@ -60,9 +60,9 @@ const ConversationListItem: React.FC<Props> = ({ conversation, isSelected, onCli
           </span>
           {unreadCount > 0 && <span className="conversation-unread-badge">{unreadCount}</span>}
         </div>
-        {conversation.availability && (
+        {conversation.availabilitySchedule && conversation.availabilitySchedule.length > 0 && (
           <div style={{ fontSize: '0.68rem', color: '#9ca3af', marginTop: '2px' }}>
-            {conversation.availability.days.split(',').join(' · ')} {conversation.availability.from}–{conversation.availability.to}
+            {conversation.availabilitySchedule.map(s => `${s.day} ${s.from}–${s.to}`).join(' · ')}
           </div>
         )}
         <div className="conversation-row-bottom">

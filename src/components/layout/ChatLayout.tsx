@@ -11,7 +11,7 @@ import GroupMembers from "../chat/GroupMembers";
 import IncomingCallModal from "../call/IncomingCallModal";
 import VideoCallModal from "../call/VideoCallModal";
 import { useWebRTC, type RemoteStream } from "../../hooks/useWebRTC";
-import type { Conversation, Message } from "../../types/chat";
+import type { Conversation, Message, DaySchedule } from "../../types/chat";
 import {
   getChats,
   getChatMessages,
@@ -44,6 +44,11 @@ const ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 function isOnlineFromLastSeen(lastSeenAt?: string | null): boolean {
   if (!lastSeenAt) return false;
   return Date.now() - new Date(lastSeenAt).getTime() < ONLINE_THRESHOLD_MS;
+}
+
+function parseSchedule(json: string | null | undefined): DaySchedule[] | null {
+  if (!json) return null;
+  try { return JSON.parse(json) as DaySchedule[]; } catch { return null; }
 }
 
 // --- GroupMembersPanel wrapper for minimize/expand ---
@@ -135,7 +140,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
 
-  const [myAvailability, setMyAvailability] = useState<{ days: string; from: string; to: string } | null>(null);
+  const [myAvailability, setMyAvailability] = useState<DaySchedule[] | null>(null);
   const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
 
   // Reply / Forward state
@@ -281,8 +286,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     otherUserHasAvatar: dto.otherUserHasAvatar ?? false,
     otherUserGroup: dto.otherUserGroup ?? null,
     chatAvatarUrl: dto.chatAvatarUrl ?? null,
-    availability: (!dto.isGroup && dto.otherUserAvailabilityDays && dto.otherUserAvailabilityFrom && dto.otherUserAvailabilityTo)
-      ? { days: dto.otherUserAvailabilityDays, from: dto.otherUserAvailabilityFrom, to: dto.otherUserAvailabilityTo }
+    availabilitySchedule: (!dto.isGroup && (dto as any).otherUserAvailabilitySchedule)
+      ? parseSchedule((dto as any).otherUserAvailabilitySchedule)
       : null,
     otherMemberLastReadAt: (dto as any).otherMemberLastReadAt ?? null,
   });
@@ -680,9 +685,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   useEffect(() => {
     if (!authToken) return;
     getMe(authToken).then(me => {
-      if (me.availabilityDays && me.availabilityFrom && me.availabilityTo) {
-        setMyAvailability({ days: me.availabilityDays, from: me.availabilityFrom, to: me.availabilityTo });
-      }
+      const schedule = parseSchedule(me.availabilitySchedule);
+      if (schedule) setMyAvailability(schedule);
     }).catch(() => {});
   }, [authToken]);
 
@@ -986,10 +990,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     }
   };
 
-  const handleSaveAvailability = async (days: string | null, from: string | null, to: string | null) => {
+  const handleSaveAvailability = async (schedule: DaySchedule[] | null) => {
     try {
-      await updateMyAvailability(authToken, { days, from, to });
-      setMyAvailability(days && from && to ? { days, from, to } : null);
+      await updateMyAvailability(authToken, schedule);
+      setMyAvailability(schedule);
       setShowAvailabilityEditor(false);
     } catch (e) {
       console.error('Failed to save availability', e);
@@ -1261,15 +1265,15 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
             <input
               className="user-search-input"
               type="text"
-              placeholder="Search by name or email…"
+              placeholder="Filter by name or email…"
               value={userSearch}
               onChange={(e) => setUserSearch(e.target.value)}
             />
-            {userSearch.trim() && isLoadingUsers && <div className="user-search-hint">Searching…</div>}
-            {userSearch.trim() && !isLoadingUsers && allUsers.length === 0 && (
-              <div className="user-search-hint">No users found</div>
+            {isLoadingUsers && allUsers.length === 0 && <div className="user-search-hint">Loading…</div>}
+            {!isLoadingUsers && allUsers.length === 0 && (
+              <div className="user-search-hint">{userSearch.trim() ? 'No users found' : 'No other users yet'}</div>
             )}
-            {userSearch.trim() && !isLoadingUsers && allUsers.length > 0 && (
+            {allUsers.length > 0 && (
               <div className="user-search-results">
                 {allUsers.map((u) => (
                   <button key={u.id} type="button" className="user-search-item" onClick={() => handleStartPrivateChat(u)}>
@@ -1277,6 +1281,16 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
                     <div className="user-search-item-text">
                       <div className="user-search-item-name">{u.username}</div>
                       {u.email && <div className="user-search-item-email">{u.email}</div>}
+                      {u.availabilitySchedule && (() => {
+                        try {
+                          const sched: { day: string; from: string; to: string }[] = JSON.parse(u.availabilitySchedule);
+                          return sched.length > 0 ? (
+                            <div className="user-search-item-availability">
+                              {sched.map(s => `${s.day} ${s.from}–${s.to}`).join(' · ')}
+                            </div>
+                          ) : null;
+                        } catch { return null; }
+                      })()}
                     </div>
                   </button>
                 ))}
