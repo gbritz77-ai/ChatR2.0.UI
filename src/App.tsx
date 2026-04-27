@@ -3,6 +3,9 @@ import { login, setAuthToken } from "./api";
 import ChatLayout from "./components/layout/ChatLayout";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 import InviteUserModal from "./components/auth/InviteUserModal";
+import ForgotPasswordModal from "./components/auth/ForgotPasswordModal";
+import ResetPasswordModal from "./components/auth/ResetPasswordModal";
+import ManageUsersModal from "./components/auth/ManageUsersModal";
 import { useTheme } from "./context/ThemeContext";
 import "./styles/chat.css";
 import "./styles/auth.css";
@@ -19,8 +22,13 @@ export default function App() {
   const [currentRole, setCurrentRole] = useState<string>("");
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [showManageUsers, setShowManageUsers] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Check if this page load has a password-reset token in the URL
+  const resetToken = new URLSearchParams(window.location.search).get("reset");
 
   console.log("VITE_API_BASE =", import.meta.env.VITE_API_BASE);
 
@@ -55,9 +63,24 @@ export default function App() {
     localStorage.removeItem("currentUserName");
   };
 
+  // ---------- PASSWORD RESET (via email link) ----------
+  if (resetToken) {
+    return (
+      <ResetPasswordModal
+        token={resetToken}
+        onSuccess={() => {
+          // Strip the ?reset= param from the URL then show login
+          window.history.replaceState({}, "", window.location.pathname);
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
   // ---------- LOGIN SCREEN ----------
   if (!token) {
     return (
+      <>
       <div className="auth-page">
         <div style={{
           width: "100%", maxWidth: 520,
@@ -136,6 +159,16 @@ export default function App() {
                 )}
                 {isLoggingIn ? "Signing in…" : "Login"}
               </button>
+
+              <div style={{ textAlign: "center", marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(true)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#7c3aed", fontSize: 13 }}
+                >
+                  Forgot password?
+                </button>
+              </div>
             </form>
 
             <div style={{ textAlign: "center", marginTop: 12 }}>
@@ -150,6 +183,8 @@ export default function App() {
           </div>
         </div>
       </div>
+      {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
+      </>
     );
   }
 
@@ -171,8 +206,15 @@ export default function App() {
         currentUserName={currentUserName}
         onLogout={handleLogout}
         onInviteUser={currentRole === "Master" ? () => setShowInvite(true) : undefined}
+        onManageUsers={currentRole === "Master" ? () => setShowManageUsers(true) : undefined}
       />
       {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} />}
+      {showManageUsers && (
+        <ManageUsersModal
+          onClose={() => setShowManageUsers(false)}
+          onInvite={() => { setShowManageUsers(false); setShowInvite(true); }}
+        />
+      )}
     </>
   );
 }

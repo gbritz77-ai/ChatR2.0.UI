@@ -88,6 +88,7 @@ interface ChatLayoutProps {
   currentUserName: string;
   onLogout: () => void;
   onInviteUser?: () => void;
+  onManageUsers?: () => void;
 }
 
 const SunIcon = () => (
@@ -117,6 +118,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   currentUserName,
   onLogout,
   onInviteUser,
+  onManageUsers,
 }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string>("");
@@ -1076,6 +1078,19 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               <span style={{ fontSize: '0.75rem', color: tokens.textMuted }}>Uploading…</span>
             )}
           </div>
+          {!isMobile && onManageUsers && (
+            <button
+              type="button"
+              onClick={onManageUsers}
+              style={{
+                borderRadius: '999px', border: `1px solid ${tokens.accentBorder}`,
+                padding: '6px 16px', background: 'transparent',
+                color: tokens.accent, fontSize: '0.85rem', cursor: 'pointer',
+              }}
+            >
+              Manage users
+            </button>
+          )}
           {!isMobile && onInviteUser && (
             <button
               type="button"

@@ -43,9 +43,48 @@ export async function changePassword(currentPassword: string, newPassword: strin
   await api.post("/Auth/change-password", { currentPassword, newPassword });
 }
 
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  const res = await api.post<{ message: string }>("/Auth/forgot-password", { email });
+  return res.data;
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  const res = await api.post<{ message: string }>("/Auth/reset-password", { token, newPassword });
+  return res.data;
+}
+
 export async function inviteUser(username: string, email: string, group?: string): Promise<{ message: string }> {
   const res = await api.post<{ message: string }>("/Users/invite", { username, email, group: group || null });
   return res.data;
+}
+
+// -----------------------------
+// User Management (Master only)
+// -----------------------------
+
+export interface ManagedUser {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  group: string | null;
+}
+
+export async function listAllUsers(): Promise<ManagedUser[]> {
+  const res = await api.get<ManagedUser[]>("/Users");
+  return res.data;
+}
+
+export async function updateUser(id: string, data: { username: string; email: string; role: string; group?: string }): Promise<void> {
+  await api.put(`/Users/${id}`, data);
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  await api.delete(`/Users/${id}`);
+}
+
+export async function setUserPassword(id: string, newPassword: string): Promise<void> {
+  await api.post(`/Users/${id}/set-password`, { newPassword });
 }
 
 // -----------------------------
