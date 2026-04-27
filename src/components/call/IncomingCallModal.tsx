@@ -130,7 +130,6 @@ const IncomingCallModal: React.FC<Props> = ({ callerName, groupName, onAccept, o
               border: "none",
               background: "#22c55e",
               color: "#fff",
-              fontSize: 24,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -139,7 +138,10 @@ const IncomingCallModal: React.FC<Props> = ({ callerName, groupName, onAccept, o
             }}
             title="Accept"
           >
-            📹
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 10l4.553-2.069A1 1 0 0 1 21 8.87v6.26a1 1 0 0 1-1.447.894L15 14"/>
+              <rect x="2" y="7" width="13" height="10" rx="2" ry="2"/>
+            </svg>
           </button>
         </div>
       </div>

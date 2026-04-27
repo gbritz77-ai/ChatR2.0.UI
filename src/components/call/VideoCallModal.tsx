@@ -135,7 +135,7 @@ const VideoCallModal: React.FC<Props> = ({
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
-  const controlBtn = (onClick: () => void, icon: string, active: boolean, danger = false, tooltip = "") => (
+  const controlBtn = (onClick: () => void, icon: React.ReactNode, active: boolean, danger = false, tooltip = "") => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
       <button
         onClick={onClick}
@@ -290,7 +290,22 @@ const VideoCallModal: React.FC<Props> = ({
         }}
       >
         {controlBtn(onToggleMute, isMuted ? "🔇" : "🎙️", !isMuted, false, isMuted ? "Unmute" : "Mute")}
-        {controlBtn(onToggleCamera, isCameraOff ? "📷" : "📹", !isCameraOff, false, isCameraOff ? "Turn camera on" : "Turn camera off")}
+        {controlBtn(
+          onToggleCamera,
+          isCameraOff ? (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="2" y1="2" x2="22" y2="22"/>
+              <path d="M10.66 6H14a2 2 0 0 1 2 2v2.34l1 1L21 8.87v6.26l-6-6"/>
+              <path d="M15.07 17.07A2 2 0 0 1 14 17H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2l9 9z"/>
+            </svg>
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 10l4.553-2.069A1 1 0 0 1 21 8.87v6.26a1 1 0 0 1-1.447.894L15 14"/>
+              <rect x="2" y="7" width="13" height="10" rx="2" ry="2"/>
+            </svg>
+          ),
+          !isCameraOff, false, isCameraOff ? "Turn camera on" : "Turn camera off"
+        )}
         {onInvite && controlBtn(onInvite, "➕", false, false, "Invite someone")}
         {controlBtn(onHangUp, "📵", false, true, "End call")}
       </div>
