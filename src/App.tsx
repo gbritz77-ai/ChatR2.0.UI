@@ -68,29 +68,46 @@ export default function App() {
           {/* Logo full width at top */}
           <img src="/logo.jpeg" alt="ChatR" style={{ width: "100%", display: "block" }} />
 
-          {/* Form panel below the logo */}
-          <div style={{ padding: "20px 28px 24px" }}>
-            {error && <div className="auth-error" style={{ marginBottom: 10 }}>{error}</div>}
+          {/* Form panel — light background to match the white logo */}
+          <div style={{ padding: "22px 28px 20px", background: "#ffffff" }}>
+            {error && <div className="auth-error" style={{ marginBottom: 10, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#b91c1c", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>{error}</div>}
 
-            <form onSubmit={handleLogin} className="auth-form" autoComplete="off">
-              <div className="field">
-                <label>Username</label>
+            <form onSubmit={handleLogin} autoComplete="off">
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "#374151" }}>Username</label>
                 <input
                   value={usernameOrEmail}
                   onChange={(e) => setUser(e.target.value)}
                   autoComplete="off"
+                  style={{
+                    width: "100%", boxSizing: "border-box",
+                    padding: "10px 12px", fontSize: 14,
+                    border: "1.5px solid #d1d5db", borderRadius: 8,
+                    background: "#f9fafb", color: "#111827",
+                    outline: "none",
+                  }}
+                  onFocus={e => e.target.style.borderColor = "#7c3aed"}
+                  onBlur={e => e.target.style.borderColor = "#d1d5db"}
                 />
               </div>
 
-              <div className="field">
-                <label>Password</label>
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "#374151" }}>Password</label>
                 <div style={{ position: "relative" }}>
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="new-password"
-                    style={{ paddingRight: "2.5rem", width: "100%", boxSizing: "border-box" }}
+                    style={{
+                      width: "100%", boxSizing: "border-box",
+                      padding: "10px 40px 10px 12px", fontSize: 14,
+                      border: "1.5px solid #d1d5db", borderRadius: 8,
+                      background: "#f9fafb", color: "#111827",
+                      outline: "none",
+                    }}
+                    onFocus={e => e.target.style.borderColor = "#7c3aed"}
+                    onBlur={e => e.target.style.borderColor = "#d1d5db"}
                   />
                   <button
                     type="button"
@@ -125,7 +142,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={toggleTheme}
-                style={{ background: "none", border: "none", cursor: "pointer", opacity: 0.5, fontSize: "0.75rem", color: "#fff" }}
+                style={{ background: "none", border: "none", cursor: "pointer", opacity: 0.5, fontSize: "0.75rem", color: "#374151" }}
               >
                 {theme === "dark" ? "☀ Switch to light mode" : "🌙 Switch to dark mode"}
               </button>
