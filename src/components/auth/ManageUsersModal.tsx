@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { listAllUsers, updateUser, deleteUser, setUserPassword, ManagedUser } from "../../api";
+import { listAllUsers, updateUser, deleteUser, setUserPassword, type ManagedUser } from "../../api";
 import { useTheme } from "../../context/ThemeContext";
 
 interface Props {
