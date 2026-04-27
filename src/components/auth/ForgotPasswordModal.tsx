@@ -27,8 +27,9 @@ const ForgotPasswordModal: React.FC<Props> = ({ onClose }) => {
       setLoading(true);
       await forgotPassword(email.trim());
       setDone(true);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
