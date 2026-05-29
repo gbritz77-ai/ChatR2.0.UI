@@ -51,6 +51,19 @@ const CreateMeetingModal: React.FC<Props> = ({ token, onClose, onCreated, onSubm
     getUsers(token).then(setUsers).catch(() => {});
   }, [token]);
 
+  // Auto-advance end time to start + 1 h whenever start time changes
+  const handleStartTimeChange = (value: string) => {
+    setStartTime(value);
+    const [sh, sm] = value.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    if (eh * 60 + em <= sh * 60 + sm) {
+      const newMins = sh * 60 + sm + 60;
+      const newH = Math.floor(newMins / 60) % 24;
+      const newM = newMins % 60;
+      setEndTime(`${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`);
+    }
+  };
+
   const startsAt = new Date(`${date}T${startTime}`);
   const endsAt = new Date(`${date}T${endTime}`);
 
@@ -72,7 +85,7 @@ const CreateMeetingModal: React.FC<Props> = ({ token, onClose, onCreated, onSubm
     e.preventDefault();
     setError(null);
     if (!title.trim()) { setError('Please enter a meeting title.'); return; }
-    if (startsAt >= endsAt) { setError('End time must be after start time.'); return; }
+    if (startsAt >= endsAt) { setError('End time must be after start time. Tip: make sure AM/PM is correct — 12:00 AM is midnight, not noon.'); return; }
     if (selected.size === 0) { setError('Select at least one person to invite.'); return; }
 
     try {
@@ -139,7 +152,7 @@ const CreateMeetingModal: React.FC<Props> = ({ token, onClose, onCreated, onSubm
           <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: tokens.textMuted, marginBottom: 5 }}>Start time</label>
-              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={inputStyle} />
+              <input type="time" value={startTime} onChange={e => handleStartTimeChange(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: tokens.textMuted, marginBottom: 5 }}>End time</label>
