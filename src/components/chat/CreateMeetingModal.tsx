@@ -131,6 +131,7 @@ const CreateMeetingModal: React.FC<Props> = ({ token, onClose, onCreated, onSubm
     e.preventDefault();
     setError(null);
     if (!title.trim()) { setError('Please enter a meeting title.'); return; }
+    if (startsAt <= new Date()) { setError('Start time must be in the future.'); return; }
     if (startsAt >= endsAt) { setError('End time must be after start time.'); return; }
     if (selected.size === 0) { setError('Select at least one person to invite.'); return; }
 
@@ -191,7 +192,7 @@ const CreateMeetingModal: React.FC<Props> = ({ token, onClose, onCreated, onSubm
           {/* Date */}
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: tokens.textMuted, marginBottom: 5 }}>Date</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
+            <input type="date" value={date} min={new Date().toISOString().slice(0, 10)} onChange={e => setDate(e.target.value)} style={inputStyle} />
           </div>
 
           {/* Time — 24-hour selects */}
