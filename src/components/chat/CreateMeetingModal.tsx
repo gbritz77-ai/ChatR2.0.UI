@@ -4,6 +4,7 @@ import { getUsers, type ChatUserDto } from '../../api/chatApi';
 import type { DaySchedule } from '../../types/chat';
 
 const DAY_KEYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MINUTES = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
 
 function parseSchedule(json: string | null | undefined): DaySchedule[] | null {
   if (!json) return null;
@@ -12,11 +13,11 @@ function parseSchedule(json: string | null | undefined): DaySchedule[] | null {
 
 function isUserAvailable(user: ChatUserDto, startsAt: Date, endsAt: Date): boolean | null {
   const schedule = parseSchedule(user.availabilitySchedule);
-  if (!schedule || schedule.length === 0) return null; // unknown
+  if (!schedule || schedule.length === 0) return null;
 
   const dayKey = DAY_KEYS[startsAt.getDay()];
   const daySlot = schedule.find(s => s.day === dayKey);
-  if (!daySlot) return false; // no availability that day
+  if (!daySlot) return false;
 
   const [fH, fM] = daySlot.from.split(':').map(Number);
   const [tH, tM] = daySlot.to.split(':').map(Number);
@@ -27,6 +28,51 @@ function isUserAvailable(user: ChatUserDto, startsAt: Date, endsAt: Date): boole
 
   return meetStart >= slotStart && meetEnd <= slotEnd;
 }
+
+/** 24-hour time picker — value is always "HH:MM" */
+const TimeSelect: React.FC<{
+  value: string;
+  onChange: (v: string) => void;
+  inputStyle: React.CSSProperties;
+}> = ({ value, onChange, inputStyle }) => {
+  const [hStr, mStr] = value.split(':');
+  const h = hStr ?? '09';
+  const m = mStr ?? '00';
+
+  const selStyle: React.CSSProperties = {
+    ...inputStyle,
+    width: 'auto',
+    flex: 1,
+    paddingLeft: 10,
+    paddingRight: 4,
+    cursor: 'pointer',
+    appearance: 'none' as const,
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <select
+        value={h}
+        onChange={e => onChange(`${e.target.value}:${m}`)}
+        style={selStyle}
+      >
+        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(hh => (
+          <option key={hh} value={hh}>{hh}</option>
+        ))}
+      </select>
+      <span style={{ color: '#888', fontWeight: 700, fontSize: '1rem', flexShrink: 0 }}>:</span>
+      <select
+        value={m}
+        onChange={e => onChange(`${h}:${e.target.value}`)}
+        style={selStyle}
+      >
+        {MINUTES.map(mm => (
+          <option key={mm} value={mm}>{mm}</option>
+        ))}
+      </select>
+    </div>
+  );
+};
 
 interface Props {
   token: string;
@@ -85,7 +131,7 @@ const CreateMeetingModal: React.FC<Props> = ({ token, onClose, onCreated, onSubm
     e.preventDefault();
     setError(null);
     if (!title.trim()) { setError('Please enter a meeting title.'); return; }
-    if (startsAt >= endsAt) { setError('End time must be after start time. Tip: make sure AM/PM is correct — 12:00 AM is midnight, not noon.'); return; }
+    if (startsAt >= endsAt) { setError('End time must be after start time.'); return; }
     if (selected.size === 0) { setError('Select at least one person to invite.'); return; }
 
     try {
@@ -148,15 +194,15 @@ const CreateMeetingModal: React.FC<Props> = ({ token, onClose, onCreated, onSubm
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
           </div>
 
-          {/* Time */}
+          {/* Time — 24-hour selects */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: tokens.textMuted, marginBottom: 5 }}>Start time</label>
-              <input type="time" value={startTime} onChange={e => handleStartTimeChange(e.target.value)} style={inputStyle} />
+              <TimeSelect value={startTime} onChange={handleStartTimeChange} inputStyle={inputStyle} />
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: tokens.textMuted, marginBottom: 5 }}>End time</label>
-              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={inputStyle} />
+              <TimeSelect value={endTime} onChange={setEndTime} inputStyle={inputStyle} />
             </div>
           </div>
 
