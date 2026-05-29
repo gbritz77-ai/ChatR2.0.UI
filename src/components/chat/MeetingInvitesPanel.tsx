@@ -8,6 +8,7 @@ interface Props {
   currentUserId: string;
   onRefresh: () => void;
   onSchedule: () => void;
+  onJoinCall: (meetingId: string) => void;
 }
 
 function formatDateTime(iso: string) {
@@ -46,10 +47,14 @@ const MeetingCard: React.FC<{
   meeting: MeetingDto;
   token: string;
   onRefresh: () => void;
-}> = ({ meeting, token, onRefresh }) => {
+  onJoinCall: (meetingId: string) => void;
+}> = ({ meeting, token, onRefresh, onJoinCall }) => {
   const { tokens } = useTheme();
   const [responding, setResponding] = useState(false);
   const past = isPast(meeting.endsAt);
+
+  // Show "Join Call" for organiser or accepted invitees on upcoming meetings
+  const canJoin = !past && (meeting.myStatus === 'organiser' || meeting.myStatus === 'accepted');
 
   const respond = async (r: 'accepted' | 'declined') => {
     setResponding(true);
@@ -132,11 +137,30 @@ const MeetingCard: React.FC<{
           </button>
         </div>
       )}
+
+      {/* Join Call button — organiser or accepted invitees on upcoming meetings */}
+      {canJoin && (
+        <button
+          onClick={() => onJoinCall(meeting.id)}
+          style={{
+            marginTop: 8, width: '100%', padding: '6px 0', borderRadius: 6, border: 'none',
+            background: 'rgba(124,58,237,0.18)', color: '#7c3aed',
+            fontWeight: 600, fontSize: '0.75rem', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 10l4.553-2.069A1 1 0 0 1 21 8.87v6.26a1 1 0 0 1-1.447.894L15 14"/>
+            <rect x="2" y="7" width="13" height="10" rx="2" ry="2"/>
+          </svg>
+          Join Call
+        </button>
+      )}
     </div>
   );
 };
 
-const MeetingInvitesPanel: React.FC<Props> = ({ meetings, token, onRefresh, onSchedule }) => {
+const MeetingInvitesPanel: React.FC<Props> = ({ meetings, token, onRefresh, onSchedule, onJoinCall }) => {
   const { tokens } = useTheme();
   const [expanded, setExpanded] = useState(true);
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
@@ -214,7 +238,7 @@ const MeetingInvitesPanel: React.FC<Props> = ({ meetings, token, onRefresh, onSc
               </div>
             ) : (
               shown.map(m => (
-                <MeetingCard key={m.id} meeting={m} token={token} onRefresh={onRefresh} />
+                <MeetingCard key={m.id} meeting={m} token={token} onRefresh={onRefresh} onJoinCall={onJoinCall} />
               ))
             )}
           </div>

@@ -519,8 +519,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       setActiveCall({ callId: data.callId });
     });
 
-    connection.on("IncomingCall", (data: { callId: string; callerName: string; groupName?: string }) => {
-      setIncomingCall({ callId: data.callId, callerName: data.callerName, groupName: data.groupName });
+    connection.on("IncomingCall", (data: { callId: string; callerName: string; groupName?: string; meetingTitle?: string }) => {
+      setIncomingCall({ callId: data.callId, callerName: data.callerName, groupName: data.meetingTitle ?? data.groupName });
     });
 
     connection.on("CallAccepted", async (data: { callId: string; participants: { userId: string; connectionId: string }[] }) => {
@@ -852,6 +852,26 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
       setIsCameraOff(nowOff);
     }
   }, [webRTC, localStream, isCameraOff]);
+
+  const handleJoinMeetingCall = useCallback(async (meetingId: string) => {
+    const conn = connectionRef.current;
+    if (!conn || conn.state !== signalR.HubConnectionState.Connected) return;
+    try {
+      try {
+        const turnServers = await getTurnCredentials(authToken);
+        webRTC.setIceServers(turnServers);
+      } catch { /* fall back to STUN */ }
+      const stream = await webRTC.getLocalStream();
+      setLocalStream(stream);
+      setActiveCall({ callId: "", calleeName: "Meeting Call" });
+      await conn.invoke("JoinMeetingCall", meetingId);
+    } catch (e) {
+      console.error("Failed to join meeting call", e);
+      setActiveCall(null);
+      webRTC.stopLocalStream();
+      setLocalStream(null);
+    }
+  }, [webRTC, authToken]);
 
   const handleInviteToCall = useCallback(async (targetUserId: string, targetName?: string) => {
     const callId = activeCallIdRef.current;
@@ -1355,6 +1375,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
               currentUserId={currentUserId}
               onRefresh={loadMeetings}
               onSchedule={() => setShowCreateMeeting(true)}
+              onJoinCall={handleJoinMeetingCall}
             />
           </div>
         </aside>
