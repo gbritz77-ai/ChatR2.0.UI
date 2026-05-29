@@ -827,18 +827,22 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
   }, [webRTC]);
 
   const handleToggleMute = useCallback(() => {
-    if (webRTC.localStream.current) {
-      webRTC.localStream.current.getAudioTracks().forEach((t) => { t.enabled = !t.enabled; });
-      setIsMuted((v) => !v);
+    const stream = webRTC.localStream.current ?? localStream;
+    if (stream) {
+      const nowMuted = !isMuted;
+      stream.getAudioTracks().forEach((t) => { t.enabled = !nowMuted; });
+      setIsMuted(nowMuted);
     }
-  }, [webRTC]);
+  }, [webRTC, localStream, isMuted]);
 
   const handleToggleCamera = useCallback(() => {
-    if (webRTC.localStream.current) {
-      webRTC.localStream.current.getVideoTracks().forEach((t) => { t.enabled = !t.enabled; });
-      setIsCameraOff((v) => !v);
+    const stream = webRTC.localStream.current ?? localStream;
+    if (stream) {
+      const nowOff = !isCameraOff;
+      stream.getVideoTracks().forEach((t) => { t.enabled = !nowOff; });
+      setIsCameraOff(nowOff);
     }
-  }, [webRTC]);
+  }, [webRTC, localStream, isCameraOff]);
 
   const handleInviteToCall = useCallback(async (targetUserId: string, targetName?: string) => {
     const callId = activeCallIdRef.current;
