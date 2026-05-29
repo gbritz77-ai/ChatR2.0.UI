@@ -320,3 +320,47 @@ export async function updateGroupAvatar(chatId: string, avatarKey: string, token
   const res = await api.put<{ avatarUrl: string }>(`/Chats/${chatId}/avatar`, { avatarKey });
   return res.data;
 }
+
+// ===== Meetings =====
+
+export interface MeetingInviteDto {
+  id: string;
+  userId: string;
+  username: string;
+  status: 'pending' | 'accepted' | 'declined';
+}
+
+export interface MeetingDto {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  createdByUserId: string;
+  createdByUsername: string;
+  createdAt: string;
+  isOrganiser: boolean;
+  myStatus: 'organiser' | 'pending' | 'accepted' | 'declined';
+  invites: MeetingInviteDto[];
+}
+
+export async function createMeeting(token: string, title: string, startsAt: Date, endsAt: Date, inviteeIds: string[]): Promise<{ id: string }> {
+  applyToken(token);
+  const res = await api.post<{ id: string }>('/Meetings', { title, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), inviteeIds });
+  return res.data;
+}
+
+export async function getMeetings(token: string): Promise<MeetingDto[]> {
+  applyToken(token);
+  const res = await api.get<MeetingDto[]>('/Meetings');
+  return res.data;
+}
+
+export async function respondToMeeting(token: string, meetingId: string, response: 'accepted' | 'declined'): Promise<void> {
+  applyToken(token);
+  await api.put(`/Meetings/${meetingId}/respond`, { response });
+}
+
+export async function deleteMeeting(token: string, meetingId: string): Promise<void> {
+  applyToken(token);
+  await api.delete(`/Meetings/${meetingId}`);
+}

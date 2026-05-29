@@ -29,11 +29,16 @@ import {
   getGroupAvatarUploadUrl,
   toggleReaction,
   getTurnCredentials,
+  createMeeting,
+  getMeetings,
   type ChatDto,
   type ChatMessageDto,
   type ChatUserDto,
+  type MeetingDto,
 } from "../../api/chatApi";
 import AvailabilityEditor from "../chat/AvailabilityEditor";
+import CreateMeetingModal from "../chat/CreateMeetingModal";
+import MeetingInvitesPanel from "../chat/MeetingInvitesPanel";
 import { presignDownload, getAvatarUploadUrl, confirmAvatar } from "../../api";
 import { useTheme } from "../../context/ThemeContext";
 import UserAvatar from "../ui/UserAvatar";
@@ -142,6 +147,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
   const [myAvailability, setMyAvailability] = useState<DaySchedule[] | null>(null);
   const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
+
+  // Meetings state
+  const [meetings, setMeetings] = useState<MeetingDto[]>([]);
+  const [showCreateMeeting, setShowCreateMeeting] = useState(false);
 
   // Reply / Forward state
   const [replyingTo, setReplyingTo] = useState<(Message & { messageId: string }) | null>(null);
@@ -994,6 +1003,27 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
     }
   };
 
+  const loadMeetings = async () => {
+    try {
+      const data = await getMeetings(authToken);
+      setMeetings(data);
+    } catch (e) {
+      console.error('Failed to load meetings', e);
+    }
+  };
+
+  // Load meetings on mount
+  useEffect(() => {
+    if (!authToken) return;
+    loadMeetings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authToken]);
+
+  const handleCreateMeeting = async (title: string, startsAt: Date, endsAt: Date, inviteeIds: string[]) => {
+    await createMeeting(authToken, title, startsAt, endsAt, inviteeIds);
+    await loadMeetings();
+  };
+
   const handleSaveAvailability = async (schedule: DaySchedule[] | null) => {
     try {
       await updateMyAvailability(authToken, schedule);
@@ -1135,7 +1165,16 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
 
       </div>
 
-      {/* Forward message modal — outside topbar so position:fixed works from viewport */}
+      {/* ─── Create Meeting Modal ──────────────────────────────────────────── */}
+      {showCreateMeeting && (
+        <CreateMeetingModal
+          token={authToken}
+          onClose={() => setShowCreateMeeting(false)}
+          onCreated={() => setShowCreateMeeting(false)}
+          onSubmit={handleCreateMeeting}
+        />
+      )}
+
       {/* ─── Video Call Modals ─────────────────────────────────────────────── */}
       {incomingCall && !activeCall && (
         <IncomingCallModal
@@ -1307,6 +1346,17 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({
           ) : (
             <ConversationList conversations={conversations} selectedId={selectedConversationId} onSelect={handleSelectConversation} onDeleteChat={handleDeleteGroup} />
           )}
+
+          {/* Meetings panel — pinned to bottom of sidebar */}
+          <div style={{ marginTop: 'auto' }}>
+            <MeetingInvitesPanel
+              meetings={meetings}
+              token={authToken}
+              currentUserId={currentUserId}
+              onRefresh={loadMeetings}
+              onSchedule={() => setShowCreateMeeting(true)}
+            />
+          </div>
         </aside>
 
         <main className="chat-main">
